@@ -1,35 +1,46 @@
 import numpy as np
+<<<<<<< Updated upstream
 import math
 import pygame
 from sys import exit
+=======
+from matplotlib import pyplot as plt
+from matplotlib import collections as mc
+class RRTCalc:
 
-class RRTCalc(self, start_x, start_y):
+>>>>>>> Stashed changes
+
+    def __init__(self, start_x, start_y):
+        self.graph_x = [start_x]
+        self.graph_y = [start_y]
+        self.graph_parent = [0]
 
 
-    self.graph.x = [start_x]
-    self.graph.y = [start_y]
-    self.graph.parent = [0]
 
-
-
-    def Method():
+    def Method(self):
         pass
 
-    def NewPoint():
-        new_x = np.random.uniform(0, workspace_x)
-        new_y = np.random.uniform(0, workspace_y)
-        valid_point = PathCheck(new_x, new_y)
+    def NewPoint(self):
+        new_x = np.random.uniform(workspace_center_x - workspace_x/2, workspace_center_x + workspace_x/2)
+        new_y = np.random.uniform(workspace_center_y - workspace_y/2, workspace_center_y + workspace_y/2)
+        valid_point = self.PathCheck(new_x, new_y)
         pass
 
-    def PathCheck(new_x, new_y):
-        for i, (x, y) in enumerate(zip(self.graph.x, self.graph.y)):
-            print(i, x, y, new_x, new_y)
-        return True
+    def PathCheck(self, new_x, new_y):
+        closest_distance = np.linalg.norm((workspace_x, workspace_y))
+        for i, (x, y) in enumerate(zip(self.graph_x, self.graph_y)):
+            node_distance = np.linalg.norm((new_x-x, new_y-y))
+            if node_distance < closest_distance:
+                closest_distance = node_distance
+                closest_node_id = i
+        self.graph_x.append(new_x)
+        self.graph_y.append(new_y)
+        self.graph_parent.append(closest_node_id)
+        return()
 
 
 
-
-
+<<<<<<< Updated upstream
 class RRTPlot():
 
     def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y):
@@ -81,5 +92,44 @@ while True:
                 pygame.quit()
                 exit()
                 
+=======
+class RRT_plot():
+
+    def method():
+        pass
 
 
+workspace_center_x = 0
+workspace_center_y = 0
+
+workspace_x = 20
+workspace_y = 10
+
+start_x = 2
+start_y = 2
+start_theta = 0
+
+goal_x = 18
+goal_y = 8
+
+RRT_calculator = RRTCalc(start_x, start_y)
+for i in range(500):
+    RRT_calculator.NewPoint()
+
+
+
+lines = []
+for i, (x, y, parent) in enumerate(zip(RRT_calculator.graph_x, RRT_calculator.graph_y, RRT_calculator.graph_parent)):
+    line = [(x, y), (RRT_calculator.graph_x[parent], RRT_calculator.graph_y[parent])]
+    lines.append(line)
+lc = mc.LineCollection(lines, linewidths=2)
+>>>>>>> Stashed changes
+
+
+fig, ax = plt.subplots()
+ax.set_xlim(-10, 10)
+ax.set_ylim(-5, 5)
+ax.add_collection(lc)
+plt.show()
+#plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
+#plt.show()
