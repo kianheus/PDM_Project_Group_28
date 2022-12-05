@@ -1,14 +1,10 @@
 import numpy as np
-<<<<<<< Updated upstream
 import math
 import pygame
 from sys import exit
-=======
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 class RRTCalc:
-
->>>>>>> Stashed changes
 
     def __init__(self, start_x, start_y):
         self.graph_x = [start_x]
@@ -40,7 +36,6 @@ class RRTCalc:
 
 
 
-<<<<<<< Updated upstream
 class RRTPlot():
 
     def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y):
@@ -69,15 +64,18 @@ class RRTPlot():
         
     
 
-workspace_x = 600
-workspace_y = 1000
+workspace_center_x = 0
+workspace_center_y = 0
 
-start_x = 50
-start_y = 50
+workspace_x = 20
+workspace_y = 10
+
+start_x = 2
+start_y = 2
 start_theta = 0
 
-goal_x = 500
-goal_y = 500
+goal_x = 18
+goal_y = 8
 
 pygame.init()
 workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y)
@@ -92,25 +90,7 @@ while True:
                 pygame.quit()
                 exit()
                 
-=======
-class RRT_plot():
 
-    def method():
-        pass
-
-
-workspace_center_x = 0
-workspace_center_y = 0
-
-workspace_x = 20
-workspace_y = 10
-
-start_x = 2
-start_y = 2
-start_theta = 0
-
-goal_x = 18
-goal_y = 8
 
 RRT_calculator = RRTCalc(start_x, start_y)
 for i in range(500):
@@ -123,7 +103,6 @@ for i, (x, y, parent) in enumerate(zip(RRT_calculator.graph_x, RRT_calculator.gr
     line = [(x, y), (RRT_calculator.graph_x[parent], RRT_calculator.graph_y[parent])]
     lines.append(line)
 lc = mc.LineCollection(lines, linewidths=2)
->>>>>>> Stashed changes
 
 
 fig, ax = plt.subplots()
