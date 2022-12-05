@@ -21,6 +21,6 @@ while True:
     if env.get_time() > 50:
         env.reset()
     
-    print(state)        
+    #print(state)        
     time.sleep(0.01 - ((time.time() - starttime) % 0.01))
         
