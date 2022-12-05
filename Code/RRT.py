@@ -34,18 +34,22 @@ class RRTCalc:
         self.graph_parent.append(closest_node_id)
         return()
 
-
+def MetersToPixel(x):
+    return x * 100
 
 class RRTPlot():
-
-    def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y):
-        self.start_x = int(start_x)
-        self.start_y = int(start_y)
+    
+    def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles):
+        self.start_x = MetersToPixel(start_x)
+        self.start_y = MetersToPixel(start_y)
         
-        self.goal_x = goal_x
-        self.goal_y = goal_y
-        self.workspace_x = workspace_x
-        self.workspace_y = workspace_y
+        self.goal_x = MetersToPixel(goal_x)
+        self.goal_y = MetersToPixel(goal_y)
+        
+        self.workspace_x = MetersToPixel(workspace_x)
+        self.workspace_y = MetersToPixel(workspace_y)
+        
+        self.obstacles = obstacles
         
         self.workspace = pygame.display.set_mode(size=(self.workspace_x, self.workspace_y))   
         self.workspace.fill((255, 255, 255))
@@ -57,10 +61,25 @@ class RRTPlot():
         self.red = (255, 0, 0)
         self.white = (255, 255, 255)
         self.black = (0, 0, 0)
-                                          
-    def drawWorkspace(self):
-        pygame.draw.circle(self.workspace, self.black, center = (self.start_x, self.start_y), radius = self.nodeRad+5.0)
-        pygame.draw.circle(self.workspace, self.black, center = (self.goal_x, self.goal_y), radius = self.nodeRad+5.0)
+                                                  
+    def DrawWorkspace(self):
+        pygame.draw.circle(self.workspace, self.green, center = (self.start_x, self.start_y), radius = self.nodeRad+10.0)
+        pygame.draw.circle(self.workspace, self.red, center = (self.goal_x, self.goal_y), radius = self.nodeRad+10.0)
+        self.DrawObs()
+        
+    def DrawObs(self):
+        
+        obstacles_x = MetersToPixel(self.obstacles[:, 0])
+        obstacles_y = MetersToPixel(self.obstacles[:, 1])
+        obstacles_theta = self.obstacles[:, 2]
+        obstacles_l = MetersToPixel(self.obstacles[:, 3])
+        obstacles_w = MetersToPixel(self.obstacles[:, 4])
+        
+        print(obstacles_x[1].shape)
+        print(obstacles_x[1])
+        
+        for i in range(len(self.obstacles)):
+            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacles_x[i], obstacles_y[i], obstacles_l[i], obstacles_w[i]))
         
     
 
@@ -77,9 +96,13 @@ start_theta = 0
 goal_x = 18
 goal_y = 8
 
+# [x, y, rotation, length, width]
+obstacles = np.array([[5, 5, 0, 2, 2], [8, 8, 0, 2, 2]]) 
+
+
 pygame.init()
-workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y)
-workspace.drawWorkspace()
+workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles)
+workspace.DrawWorkspace()
 pygame.display.update()
 pygame.event.clear()
 pygame.event.wait(0)
