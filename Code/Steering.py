@@ -49,17 +49,24 @@ class FullPath():
             ang_e_1, ang_e_2 = ang_e_2, ang_e_1
         ang_s = np.sign(-CPs.circle_vec[2]) * ((ang_s_2 - ang_s_1) % (2 * np.pi) + alpha)
         ang_e = np.sign(-CPe.circle_vec[2]) * ((ang_e_2 - ang_e_1) % (2 * np.pi) + alpha)
-        length = np.abs(ang_s) * CPs.r + np.abs(ang_e) * CPe.r + np.linalg.norm(d)
 
-        self.length = length
-        self.ang_s = ang_s
-        self.ang_e = ang_e
         self.P1 = CPs.P_centre + r_st
         self.P2 = CPe.P_centre + r_et
+
+        self.dist = [np.abs(ang_s) * CPs.r, np.linalg.norm(self.P1 - self.P2), np.abs(ang_e) * CPe.r]
+        self.curv = [1 / CPs.circle_vec[-1], 0, 1 / CPe.circle_vec[-1]]
+
+        self.length = sum(self.dist)
+
+        self.ang_s = ang_s
+        self.ang_e = ang_e
+
         self.ang_s_1 = ang_s_1
         self.ang_s_2 = ang_s_2
         self.ang_e_1 = ang_e_1
         self.ang_e_2 = ang_e_2
+
+        
 
     def plot(self, ax, color='orange', linewidth=1.5, alpha=1.0):
         if self.length != np.inf:
@@ -71,46 +78,75 @@ class FullPath():
             wedge = patches.Arc(self.CP_e.P_centre[0:2], 2*self.CP_e.r, 2*self.CP_e.r, theta1=np.rad2deg(self.ang_e_1), theta2=np.rad2deg(self.ang_e_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
             ax.add_patch(wedge)
 
-
-def main():
-    P_s = np.array([0, 0, 0])
-    theta_s = np.deg2rad(90)
-
-    P_e = np.array([1.0, 1.0, 0])
-    theta_e = np.deg2rad(-90)
-
-    plt.figure()
-    plt.scatter(P_s[0], P_s[1], color='green')
-    plt.plot(P_s[0] + [0, np.cos(theta_s)*0.1], P_s[1] + [0, np.sin(theta_s)*0.1], color='green', linewidth=3)
-
-    plt.scatter(P_e[0], P_e[1], color='blue')
-    plt.plot(P_e[0] + [0, np.cos(theta_e)*0.1], P_e[1] + [0, np.sin(theta_e)*0.1], color='blue', linewidth=3)
+    def print(self):
+        print(f"distance = {self.dist[0]}, curve = {self.curv[0]}")
+        print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
+        print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
+        print(f"Total = {sum(self.dist)}")
 
 
+def optimal_path(P_s, theta_s, P_e, theta_e, radii):
     FP_opt = None
     length_min = np.inf
-    for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
+    for r in radii:
 
         CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
         CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
         
         for CP_s, CP_e in itertools.product(CP_ss, CP_es):
             FP = FullPath(CP_s, CP_e)
-            FP.plot(plt.gca(), alpha=0.3)
+            # FP.plot(plt.gca(), alpha=0.3)
 
             if FP.length < length_min:
                 FP_opt = FP
                 length_min = FP_opt.length
 
-    FP_opt.plot(plt.gca(), color="red", linewidth=3)
+    # FP_opt.plot(plt.gca(), color="red", linewidth=3)
+    # FP_opt.print()
+    return FP_opt
+
+def main():
+    P_s = np.array([0, 0, 0])
+    theta_s = np.deg2rad(90)
+
+    P_e = np.array([1.0, 2.0, 0])
+    theta_e = np.deg2rad(-90)
+
+    # plt.figure()
+    # plt.scatter(P_s[0], P_s[1], color='green')
+    # plt.plot(P_s[0] + [0, np.cos(theta_s)*0.1], P_s[1] + [0, np.sin(theta_s)*0.1], color='green', linewidth=3)
+
+    # plt.scatter(P_e[0], P_e[1], color='blue')
+    # plt.plot(P_e[0] + [0, np.cos(theta_e)*0.1], P_e[1] + [0, np.sin(theta_e)*0.1], color='blue', linewidth=3)
+
+
+    # FP_opt = None
+    # length_min = np.inf
+    # for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
+
+    #     CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
+    #     CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
+        
+    #     for CP_s, CP_e in itertools.product(CP_ss, CP_es):
+    #         FP = FullPath(CP_s, CP_e)
+    #         FP.plot(plt.gca(), alpha=0.3)
+
+    #         if FP.length < length_min:
+    #             FP_opt = FP
+    #             length_min = FP_opt.length
+
+    # FP_opt.plot(plt.gca(), color="red", linewidth=3)
+    # FP_opt.print()
+
+    print(f"Shortest path = {optimal_path(P_s, theta_s, P_e, theta_e, [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]).length}")
 
 
 
-    plt.ylim(-5, 5)
-    plt.xlim(-5, 5)
-    plt.grid()
-    plt.axis("equal")
-    plt.show()
+    # plt.ylim(-5, 5)
+    # plt.xlim(-5, 5)
+    # plt.grid()
+    # plt.axis("equal")
+    # plt.show()
 
 
 if __name__ == "__main__":
