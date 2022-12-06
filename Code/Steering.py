@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time
+import itertools
 
 def rot(theta):
     return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 0.0]])
@@ -60,7 +61,7 @@ class FullPath():
         self.ang_e_1 = ang_e_1
         self.ang_e_2 = ang_e_2
 
-    def plot(self, ax, color='orange', linewidth=1.5, alpha=0.3):
+    def plot(self, ax, color='orange', linewidth=1.5, alpha=1.0):
         if self.length != np.inf:
             ax.scatter(self.P1[0], self.P1[1], color=color, alpha=alpha)
             ax.scatter(self.P2[0], self.P2[1], color=color, alpha=alpha)
@@ -73,39 +74,35 @@ class FullPath():
 
 def main():
     P_s = np.array([0, 0, 0])
-    theta_s = np.deg2rad(180)
+    theta_s = np.deg2rad(90)
 
-    P_e = np.array([-1, 2, 0])
+    P_e = np.array([1.0, 1.0, 0])
     theta_e = np.deg2rad(-90)
 
     plt.figure()
     plt.scatter(P_s[0], P_s[1], color='green')
-    plt.scatter(P_e[0], P_e[1], color='red')
+    plt.plot(P_s[0] + [0, np.cos(theta_s)*0.1], P_s[1] + [0, np.sin(theta_s)*0.1], color='green', linewidth=3)
 
-    CP_s_min, CP_s_max = None, None
-    FP_min = None
+    plt.scatter(P_e[0], P_e[1], color='blue')
+    plt.plot(P_e[0] + [0, np.cos(theta_e)*0.1], P_e[1] + [0, np.sin(theta_e)*0.1], color='blue', linewidth=3)
+
+
+    FP_opt = None
     length_min = np.inf
-    for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2]:
+    for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
 
-        CP_sl = CircPath(P_s, theta_s, r, +1)
-        CP_sr = CircPath(P_s, theta_s, r, -1)
-
-        CP_el = CircPath(P_e, theta_e, r, +1)
-        CP_er = CircPath(P_e, theta_e, r, -1)
-
+        CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
+        CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
         
-        for CP_s in [CP_sl, CP_sr]:
-            for CP_e in [CP_el, CP_er]:
+        for CP_s, CP_e in itertools.product(CP_ss, CP_es):
+            FP = FullPath(CP_s, CP_e)
+            FP.plot(plt.gca(), alpha=0.3)
 
-                FP = FullPath(CP_s, CP_e)
-                FP.plot(plt.gca())
+            if FP.length < length_min:
+                FP_opt = FP
+                length_min = FP_opt.length
 
-                if FP.length < length_min:
-                    length_min = FP.length
-                    FP_min = FP
-
-
-    FP_min.plot(plt.gca(), color="red", linewidth=3, alpha=1.0)
+    FP_opt.plot(plt.gca(), color="red", linewidth=3)
 
 
 
