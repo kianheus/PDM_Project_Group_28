@@ -4,6 +4,7 @@ import pygame
 from sys import exit
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
+
 class RRTCalc:
 
     def __init__(self, start_x, start_y):
@@ -12,17 +13,13 @@ class RRTCalc:
         self.graph_parent = [0]
 
 
-
-    def Method(self):
-        pass
-
-    def NewPoint(self):
+    def new_point(self):
         new_x = np.random.uniform(workspace_center_x - workspace_x/2, workspace_center_x + workspace_x/2)
         new_y = np.random.uniform(workspace_center_y - workspace_y/2, workspace_center_y + workspace_y/2)
         valid_point = self.PathCheck(new_x, new_y)
         pass
 
-    def PathCheck(self, new_x, new_y):
+    def path_check(self, new_x, new_y):
         closest_distance = np.linalg.norm((workspace_x, workspace_y))
         for i, (x, y) in enumerate(zip(self.graph_x, self.graph_y)):
             node_distance = np.linalg.norm((new_x-x, new_y-y))
@@ -34,20 +31,20 @@ class RRTCalc:
         self.graph_parent.append(closest_node_id)
         return()
 
-def MetersToPixel(x):
+def meters2pixels(x):
     return x * 100
 
 class RRTPlot():
     
     def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles):
-        self.start_x = MetersToPixel(start_x)
-        self.start_y = MetersToPixel(start_y)
+        self.start_x = meters2pixels(start_x)
+        self.start_y = meters2pixels(start_y)
         
-        self.goal_x = MetersToPixel(goal_x)
-        self.goal_y = MetersToPixel(goal_y)
+        self.goal_x = meters2pixels(goal_x)
+        self.goal_y = meters2pixels(goal_y)
         
-        self.workspace_x = MetersToPixel(workspace_x)
-        self.workspace_y = MetersToPixel(workspace_y)
+        self.workspace_x = meters2pixels(workspace_x)
+        self.workspace_y = meters2pixels(workspace_y)
         
         self.obstacles = obstacles
         
@@ -62,18 +59,18 @@ class RRTPlot():
         self.white = (255, 255, 255)
         self.black = (0, 0, 0)
                                                   
-    def DrawWorkspace(self):
+    def draw_workspace(self):
         pygame.draw.circle(self.workspace, self.green, center = (self.start_x, self.start_y), radius = self.nodeRad+10.0)
         pygame.draw.circle(self.workspace, self.red, center = (self.goal_x, self.goal_y), radius = self.nodeRad+10.0)
-        self.DrawObs()
+        self.draw_obstacles()
         
-    def DrawObs(self):
+    def draw_obstacles(self):
         
-        obstacles_x = MetersToPixel(self.obstacles[:, 0])
-        obstacles_y = MetersToPixel(self.obstacles[:, 1])
+        obstacles_x = meters2pixels(self.obstacles[:, 0])
+        obstacles_y = meters2pixels(self.obstacles[:, 1])
         obstacles_theta = self.obstacles[:, 2]
-        obstacles_l = MetersToPixel(self.obstacles[:, 3])
-        obstacles_w = MetersToPixel(self.obstacles[:, 4])
+        obstacles_l = meters2pixels(self.obstacles[:, 3])
+        obstacles_w = meters2pixels(self.obstacles[:, 4])
         
         print(obstacles_x[1].shape)
         print(obstacles_x[1])
@@ -102,7 +99,7 @@ obstacles = np.array([[5, 5, 0, 2, 2], [8, 8, 0, 2, 2]])
 
 pygame.init()
 workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles)
-workspace.DrawWorkspace()
+workspace.draw_workspace()
 pygame.display.update()
 pygame.event.clear()
 pygame.event.wait(0)
