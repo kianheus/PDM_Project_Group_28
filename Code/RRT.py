@@ -1,9 +1,12 @@
 import numpy as np
 import math
 import pygame
+import time
 from sys import exit
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
+
+start_time = time.time()
 class RRTCalc:
 
     def __init__(self, start_x, start_y):
@@ -77,6 +80,7 @@ start_theta = 0
 goal_x = 18
 goal_y = 8
 
+"""
 pygame.init()
 workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y)
 workspace.drawWorkspace()
@@ -89,11 +93,11 @@ while True:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-                
-
+"""
 
 RRT_calculator = RRTCalc(start_x, start_y)
-for i in range(500):
+for i in range(5000):
+    if i%100 
     RRT_calculator.NewPoint()
 
 
@@ -109,6 +113,8 @@ fig, ax = plt.subplots()
 ax.set_xlim(-10, 10)
 ax.set_ylim(-5, 5)
 ax.add_collection(lc)
+print(time.time() - start_time)
 plt.show()
+
 #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
 #plt.show()
