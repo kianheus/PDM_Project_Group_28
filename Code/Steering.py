@@ -208,9 +208,9 @@ def optimal_path(P_s, theta_s, P_e, theta_e, radii):
 
     return FP_opt
 
-def plot_point(ax, P, theta, color, length=0.1):
+def plot_point(ax, P, theta, color, length=0.1, label=None):
     ax.scatter(P[0], P[1], color=color)
-    ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3)
+    ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3, label=label)
 
 def main():
     P_s = np.array([0, 0])
