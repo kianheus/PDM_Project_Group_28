@@ -87,7 +87,7 @@ class Circ3Path():
         self.ang_e = np.sign(-self.CP_e.circle_vec[2]) * ((self.ang_e_2 - self.ang_e_1) % (2 * np.pi))
 
         self.dist = [np.abs(self.ang_s) * self.CP_s.r, np.abs(self.ang_m) * self.r, np.abs(self.ang_e) * self.CP_e.r]
-        self.curv = [1 / self.CP_s.circle_vec[-1], 1 / self.circle_vec[-1], 1 / self.CP_e.circle_vec[-1]]
+        self.curv = [-1 / self.CP_s.circle_vec[-1], -1 / self.circle_vec[-1], -1 / self.CP_e.circle_vec[-1]]
 
         self.length = sum(self.dist)
 
@@ -105,12 +105,13 @@ class Circ3Path():
             wedge = patches.Arc(self.CP_e.P_centre[0:2], 2*self.CP_e.r, 2*self.CP_e.r, theta1=np.rad2deg(self.ang_e_1), theta2=np.rad2deg(self.ang_e_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
             ax.add_patch(wedge)
             
-            print(f"length (ccc) = {self.length}")
+            # print(f"length (ccc) = {self.length}")
 
     def print(self):
-        print(f"{self.ang_s=}")
-        print(f"{self.ang_m=}")
-        print(f"{self.ang_e=}")
+        print(f"distance = {self.dist[0]}, curve = {self.curv[0]}")
+        print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
+        print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
+        print(f"Total = {sum(self.dist)}")
 
 class FullPath():
     def __init__(self, CPs, CPe):
@@ -146,7 +147,7 @@ class FullPath():
         self.P2 = CPe.P_centre + r_et
 
         self.dist = [np.abs(ang_s) * CPs.r, np.linalg.norm(self.P1 - self.P2), np.abs(ang_e) * CPe.r]
-        self.curv = [1 / CPs.circle_vec[-1], 0, 1 / CPe.circle_vec[-1]]
+        self.curv = [-1 / CPs.circle_vec[-1], 0, -1 / CPe.circle_vec[-1]]
 
         self.length = sum(self.dist)
 
@@ -170,11 +171,9 @@ class FullPath():
             ax.add_patch(wedge)
             wedge = patches.Arc(self.CP_e.P_centre[0:2], 2*self.CP_e.r, 2*self.CP_e.r, theta1=np.rad2deg(self.ang_e_1), theta2=np.rad2deg(self.ang_e_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
             ax.add_patch(wedge)
-            print(f"length (csc) = {self.length}")
+            # print(f"length (csc) = {self.length}")
 
     def print(self):
-        print(f"{self.ang_s=}")
-        print(f"{self.ang_e=}")
         print(f"distance = {self.dist[0]}, curve = {self.curv[0]}")
         print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
         print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
@@ -186,8 +185,6 @@ def optimal_path(P_s, theta_s, P_e, theta_e, radii):
         P_s = np.hstack((P_s, 0.0))
     if P_e.shape[0] == 2:
         P_e = np.hstack((P_e, 0.0))
-    print(f"{P_s=}")
-    print(f"{P_e=}")
     FP_opt = None
     length_min = np.inf
     for r in radii:
@@ -268,7 +265,7 @@ def main():
 
     # print(f"Shortest path = {FP_opt.length}")
     op = optimal_path(P_s, theta_s, P_e, theta_e, [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6])
-    print(f"Shortest path = {op.length}")
+    op.print()
 
     op.plot(ax, color="red", linewidth=3, alpha=0.8, points=False)
 
