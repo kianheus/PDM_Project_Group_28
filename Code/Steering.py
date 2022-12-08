@@ -14,8 +14,11 @@ class CircPath():
     r = 0
 
     def __init__(self, P_origin, theta, r, orient=1):
+        if P_origin.shape[0] == 2:
+            P_origin = np.hstack((P_origin, 0.0))
         self.r = r
         self.P_origin = P_origin
+        orient = np.sign(orient)
         self.P_centre = orient * r * np.array([[0.0, -1.0, 0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]) @ np.array([np.cos(theta), np.sin(theta), 0]) + self.P_origin
         self.circle_vec = orient * np.array([0.0, 0.0, -r])
 
@@ -86,6 +89,12 @@ class FullPath():
 
 
 def optimal_path(P_s, theta_s, P_e, theta_e, radii):
+    if P_s.shape[0] == 2:
+        P_s = np.hstack((P_s, 0.0))
+    if P_e.shape[0] == 2:
+        P_e = np.hstack((P_e, 0.0))
+    print(f"{P_s=}")
+    print(f"{P_e=}")
     FP_opt = None
     length_min = np.inf
     for r in radii:
@@ -95,58 +104,55 @@ def optimal_path(P_s, theta_s, P_e, theta_e, radii):
         
         for CP_s, CP_e in itertools.product(CP_ss, CP_es):
             FP = FullPath(CP_s, CP_e)
-            # FP.plot(plt.gca(), alpha=0.3)
+            if FP.length < length_min:
+                FP_opt = FP
+                length_min = FP_opt.length
+
+    return FP_opt
+
+def plot_point(ax, P, theta, color, length=0.1):
+    ax.scatter(P[0], P[1], color=color)
+    ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3)
+
+def main():
+    P_s = np.array([0, 0])
+    theta_s = np.deg2rad(90)
+
+    P_e = np.array([0.5, 1.0])
+    theta_e = np.deg2rad(90)
+
+    plt.figure()
+    ax = plt.gca()
+    plot_point(ax, P_s, theta_s, 'green')
+    plot_point(ax, P_e, theta_e, 'blue')
+
+    FP_opt = None
+    length_min = np.inf
+    for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
+
+        CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
+        CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
+        
+        for CP_s, CP_e in itertools.product(CP_ss, CP_es):
+            FP = FullPath(CP_s, CP_e)
+            FP.plot(ax, alpha=0.3)
 
             if FP.length < length_min:
                 FP_opt = FP
                 length_min = FP_opt.length
 
-    # FP_opt.plot(plt.gca(), color="red", linewidth=3)
-    # FP_opt.print()
-    return FP_opt
-
-def main():
-    P_s = np.array([0, 0, 0])
-    theta_s = np.deg2rad(90)
-
-    P_e = np.array([1.0, 2.0, 0])
-    theta_e = np.deg2rad(-90)
-
-    # plt.figure()
-    # plt.scatter(P_s[0], P_s[1], color='green')
-    # plt.plot(P_s[0] + [0, np.cos(theta_s)*0.1], P_s[1] + [0, np.sin(theta_s)*0.1], color='green', linewidth=3)
-
-    # plt.scatter(P_e[0], P_e[1], color='blue')
-    # plt.plot(P_e[0] + [0, np.cos(theta_e)*0.1], P_e[1] + [0, np.sin(theta_e)*0.1], color='blue', linewidth=3)
-
-
-    # FP_opt = None
-    # length_min = np.inf
-    # for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
-
-    #     CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
-    #     CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
-        
-    #     for CP_s, CP_e in itertools.product(CP_ss, CP_es):
-    #         FP = FullPath(CP_s, CP_e)
-    #         FP.plot(plt.gca(), alpha=0.3)
-
-    #         if FP.length < length_min:
-    #             FP_opt = FP
-    #             length_min = FP_opt.length
-
-    # FP_opt.plot(plt.gca(), color="red", linewidth=3)
-    # FP_opt.print()
+    FP_opt.plot(ax, color="red", linewidth=3)
+    FP_opt.print()
 
     print(f"Shortest path = {optimal_path(P_s, theta_s, P_e, theta_e, [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]).length}")
 
 
 
-    # plt.ylim(-5, 5)
-    # plt.xlim(-5, 5)
-    # plt.grid()
-    # plt.axis("equal")
-    # plt.show()
+    plt.ylim(-5, 5)
+    plt.xlim(-5, 5)
+    plt.grid()
+    plt.axis("equal")
+    plt.show()
 
 
 if __name__ == "__main__":
