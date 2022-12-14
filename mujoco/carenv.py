@@ -3,6 +3,7 @@ import mujoco
 import mujoco_viewer
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import random
 
 class Car(core.Env):
                       
@@ -17,14 +18,28 @@ class Car(core.Env):
         
     def reset(self):
         
+        """
+        self.model.geom('wall1').size = np.array([10.1,0.05,0.25])
+        self.model.geom('wall2').size = np.array([0.05, 10, 0.25])
+        self.model.geom('wall3').size = np.array([10.1,0.05,0.25])
+        self.model.geom('wall4').size = np.array([0.05,10,0.25])
+        """
+        
+        
         mujoco.mj_resetCallbacks()
         mujoco.mj_resetData(self.model, self.data)
-           
+
+        
         for i in range(1):
            mujoco.mj_step(self.model, self.data)
 
-        obs=0
-        return obs
+        data = self.get_sensor_data()
+        
+        obstacles = self.get_obstacles_simple()
+        
+        state = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
+        
+        return state, obstacles
 
     def step(self, action):
         self.data.ctrl[0] = action[0]
@@ -32,18 +47,13 @@ class Car(core.Env):
              
         mujoco.mj_step(self.model, self.data)
         
-        reward = 0
-        done = 0
-        info = 0
-        obs = 0
-        
         data = self.get_sensor_data()
         
-        self.get_obstacles()
+        obstacles = self.get_obstacles_simple()
         
-        obs = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
+        state = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
         
-        return obs, reward, done, info
+        return state, obstacles
     
     def render(self, mode):
         self.viewer.render()
@@ -57,6 +67,11 @@ class Car(core.Env):
                 'car_orientation' : orientation}
         
         return data
+    
+    def quat_to_degree(self, quat):
+        rl = R.from_quat(quat)
+        orientation = - (rl.as_euler('xyz')[0] - np.pi)
+        return orientation
     
     def get_obstacles(self):
         
@@ -94,6 +109,23 @@ class Car(core.Env):
         #print('size = ',self.model.geom_size[1:ngeom+1])
         #print(self.data.geom('wall1').xpos)
         #print(self.model.geom('wall1').size)
+        
+    def get_obstacles_simple(self):
+        
+        obs = np.array([np.hstack(([self.data.body('wall1').xpos[0:2], self.quat_to_degree(self.data.body('wall1').xquat), self.model.geom('wall1').size[0:2]])),
+                        np.hstack(([self.data.body('wall2').xpos[0:2], self.quat_to_degree(self.data.body('wall2').xquat), self.model.geom('wall2').size[0:2]])),
+                        np.hstack(([self.data.body('wall3').xpos[0:2], self.quat_to_degree(self.data.body('wall3').xquat), self.model.geom('wall3').size[0:2]])),
+                        np.hstack(([self.data.body('wall4').xpos[0:2], self.quat_to_degree(self.data.body('wall4').xquat), self.model.geom('wall4').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall1').xpos[0:2], self.quat_to_degree(self.data.body('wallhall1').xquat), self.model.geom('wallhall1').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall2').xpos[0:2], self.quat_to_degree(self.data.body('wallhall2').xquat), self.model.geom('wallhall2').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall3').xpos[0:2], self.quat_to_degree(self.data.body('wallhall3').xquat), self.model.geom('wallhall3').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall4').xpos[0:2], self.quat_to_degree(self.data.body('wallhall4').xquat), self.model.geom('wallhall4').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall5').xpos[0:2], self.quat_to_degree(self.data.body('wallhall5').xquat), self.model.geom('wallhall5').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall6').xpos[0:2], self.quat_to_degree(self.data.body('wallhall6').xquat), self.model.geom('wallhall6').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall7').xpos[0:2], self.quat_to_degree(self.data.body('wallhall7').xquat), self.model.geom('wallhall7').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]]))])
+
+        return obs
     
     def get_time(self):
         time = self.data.time
