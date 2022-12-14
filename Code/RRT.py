@@ -10,27 +10,23 @@ start_time = time.time()
 class RRTCalc:
 
     def __init__(self, start_x, start_y):
-        self.graph_x = [start_x]
-        self.graph_y = [start_y]
-        self.graph_parent = [0]
+        #self.graph_x = np.array([start_x])
+        #self.graph_y = np.array([start_y])
+        self.graph_coords = np.array([[start_x, start_y]])
+        self.graph_parent = np.array([0])
 
 
     def new_point(self):
         new_x = np.random.uniform(workspace_center_x - workspace_x/2, workspace_center_x + workspace_x/2)
         new_y = np.random.uniform(workspace_center_y - workspace_y/2, workspace_center_y + workspace_y/2)
-        valid_point = self.PathCheck(new_x, new_y)
+        new_coord = np.array([new_x, new_y])
+        valid_point = self.path_check(new_coord)
         pass
 
-    def path_check(self, new_x, new_y):
-        closest_distance = np.linalg.norm((workspace_x, workspace_y))
-        for i, (x, y) in enumerate(zip(self.graph_x, self.graph_y)):
-            node_distance = np.linalg.norm((new_x-x, new_y-y))
-            if node_distance < closest_distance:
-                closest_distance = node_distance
-                closest_node_id = i
-        self.graph_x.append(new_x)
-        self.graph_y.append(new_y)
-        self.graph_parent.append(closest_node_id)
+    def path_check(self, new_coord):
+        closest_node_id = np.argmin(np.linalg.norm(self.graph_coords - new_coord, axis=1))
+        self.graph_coords = np.append(self.graph_coords, np.array([new_coord]), axis = 0)
+        self.graph_parent = np.append(self.graph_parent, closest_node_id)
         return()
 
 def meters2pixels(x):
@@ -89,14 +85,21 @@ start = np.array([[2, 2, 0]]) # Starting position and orientation of robots (x, 
 goal = np.array([[8, 8, 0]]) # Goal position and orientation of robot (x, y, theta)
 
 # [x, y, rotation, length, width]
+<<<<<<< Updated upstream
 obstacles = np.array([[1, 1, 0, 2, 1], [8, 8, 0, 2, 1]]) 
 
+=======
+obstacles = np.array([[5, 5, 0, 2, 2], [8, 8, 0, 2, 2]]) 
+
+"""
+>>>>>>> Stashed changes
 pygame.init()
 workspace = RRTPlot(start, goal, workspace_size, workspace_center, obstacles)
 workspace.draw_workspace()
 pygame.display.update()
 pygame.event.clear()
 pygame.event.wait(0)
+
 
 while True:
         for event in pygame.event.get():
@@ -106,24 +109,24 @@ while True:
 """
 
 RRT_calculator = RRTCalc(start_x, start_y)
-for i in range(5000):
-    if i%100 
-    RRT_calculator.NewPoint()
+for i in range(10000):
+    if i%100 == 0:
+        print(i)
+    RRT_calculator.new_point()
 
 
 
 lines = []
-for i, (x, y, parent) in enumerate(zip(RRT_calculator.graph_x, RRT_calculator.graph_y, RRT_calculator.graph_parent)):
-    line = [(x, y), (RRT_calculator.graph_x[parent], RRT_calculator.graph_y[parent])]
+for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent)):
+    line = [RRT_calculator.graph_coords[i,:], (RRT_calculator.graph_coords[parent, :])]
     lines.append(line)
-lc = mc.LineCollection(lines, linewidths=2)
+lc = mc.LineCollection(lines, linewidths=2, cmap='jet')
 
 
 fig, ax = plt.subplots()
 ax.set_xlim(-10, 10)
 ax.set_ylim(-5, 5)
 ax.add_collection(lc)
-print(time.time() - start_time)
 plt.show()
 
 #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
