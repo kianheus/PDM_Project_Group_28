@@ -85,14 +85,8 @@ start = np.array([[2, 2, 0]]) # Starting position and orientation of robots (x, 
 goal = np.array([[8, 8, 0]]) # Goal position and orientation of robot (x, y, theta)
 
 # [x, y, rotation, length, width]
-<<<<<<< Updated upstream
 obstacles = np.array([[1, 1, 0, 2, 1], [8, 8, 0, 2, 1]]) 
 
-=======
-obstacles = np.array([[5, 5, 0, 2, 2], [8, 8, 0, 2, 2]]) 
-
-"""
->>>>>>> Stashed changes
 pygame.init()
 workspace = RRTPlot(start, goal, workspace_size, workspace_center, obstacles)
 workspace.draw_workspace()
