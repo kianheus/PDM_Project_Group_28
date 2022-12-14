@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time
 import itertools
+from collections.abc import Iterable
 
 def rot(theta):
     return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 0.0]])
@@ -178,6 +179,9 @@ class Circ3Path():
             out.append(self.interpolate(a))
         return np.array(out)
 
+    def interpolate_n(self, n=100):
+        return self.interpolate_multi(np.linspace(0.0, 1.0, n))
+
     def plot_interpolate(self, ax):
         points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
         ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
@@ -292,6 +296,9 @@ class FullPath():
             out.append(self.interpolate(a))
         return np.array(out)
 
+    def interpolate_n(self, n=100):
+        return self.interpolate_multi(np.linspace(0.0, 1.0, n))
+
 
     def plot_interpolate(self, ax):
         points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
@@ -307,6 +314,9 @@ def optimal_path(P_s, theta_s, P_e, theta_e, radii):
         P_e = np.hstack((P_e, 0.0))
     FP_opt = None
     length_min = np.inf
+    
+    if not isinstance(radii, Iterable):
+        radii = [radii]
     for r in radii:
 
         CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
