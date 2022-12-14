@@ -306,6 +306,133 @@ class FullPath():
         ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
 
+class Segment():
+    length = np.inf
+    curvature = 0
+    point_start = np.array([])
+    point_end = np.array([])
+
+    def __init__(self):
+        raise NotImplementedError()
+
+    def interpolate_single(self, b):
+        raise NotImplementedError()
+
+    def plot(self, ax):
+        raise NotImplementedError()
+    
+    def interpolate_multi(self, bb):
+        out = []
+        for b in bb:
+            out.append(self.interpolate_single(b))
+        return np.array(out)
+
+    def interpolate(self, n=100):
+        self.interpolate(np.linspace(0.0, 1.0, n))
+
+class Line(Segment):
+    def __init__(self, s, e):
+        self.point_start = s
+        self.point_end = e
+        self.length = np.linalg.norm(self.point_end - self.point_start)
+        self.curvature = 0
+
+    def interpolate_single(self, b):
+        return self.point_start + b * (self.point_end - self.point_start)
+
+    def plot(self, ax, color='orange', linewidth=1.5, alpha=1.0):
+        ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], linewidth=linewidth, color=color, alpha=alpha)
+
+class Arc(Segment):
+    def __init__(self, s, e, r):
+        self.point_start = s
+        self.point_end = e
+
+        self.angle_start = 0
+        self.angle_end = 0
+
+        self.point_centre = 0
+
+        self.length = np.linalg.norm(self.point_end - self.point_start)
+        self.radius = r
+        self.curvature = 1/r
+
+    def interpolate_single(self, b):
+        return self.point_start + b * (self.point_end - self.point_start)
+
+    def plot(self, ax, color='orange', linewidth=1.5, alpha=1.0):
+        ax.add_patch(patches.Arc(self.point_centre[0:2],
+                                    2*self.radius, 2*self.radius,
+                                    theta1=np.rad2deg(self.angle_start),
+                                    theta2=np.rad2deg(self.angle_end),
+                                    ec=color, linewidth=linewidth, fill=False, alpha=alpha))
+
+
+
+class Path():
+    length = np.inf
+    dists = np.array([])
+    curvs = np.array([])
+    segments = []
+
+    def __init__(self):
+        pass
+
+    def print(self):
+        if self.dists.shape[0] == 0:
+            for d, c in zip(self.dists, self.curvs):
+                print(f"distance = {d}, curve = {c}")
+            print(f"Total = {sum(self.dist)}")
+        else:
+            print("Empty Path")
+
+
+class PathTST(Path):
+    def __init__(self, CPs, CPe):
+        self.CP_s = CPs
+        self.CP_e = CPe
+
+        d = CPe.P_centre - CPs.P_centre
+        u_d = d / np.linalg.norm(d)
+        if np.sign(CPs.circle_vec[2]) != np.sign(CPe.circle_vec[2]):
+            if (CPs.r + CPe.r) < np.linalg.norm(d):
+                alpha = np.arcsin((CPs.r + CPe.r)/np.linalg.norm(d)) * np.sign(-CPs.circle_vec[2])
+            else:
+                self.length = np.inf
+                return
+        else:
+            alpha = 0
+        r_st = rot(alpha) @ np.cross(CPs.circle_vec, u_d)
+        r_et = rot(alpha) @ np.cross(CPe.circle_vec, u_d)
+        r_s = CPs.P_origin - CPs.P_centre
+        r_e = CPe.P_origin - CPe.P_centre
+        ang_s_1 = np.arctan2(r_s[1], r_s[0])
+        ang_s_2 = np.arctan2(r_st[1], r_st[0])
+        if CPs.circle_vec[2] > 0:
+            ang_s_1, ang_s_2 = ang_s_2, ang_s_1
+        ang_e_1 = np.arctan2(r_e[1], r_e[0])
+        ang_e_2 = np.arctan2(r_et[1], r_et[0])
+        if CPe.circle_vec[2] < 0:
+            ang_e_1, ang_e_2 = ang_e_2, ang_e_1
+        ang_s = np.sign(-CPs.circle_vec[2]) * ((ang_s_2 - ang_s_1) % (2 * np.pi))
+        ang_e = np.sign(-CPe.circle_vec[2]) * ((ang_e_2 - ang_e_1) % (2 * np.pi))
+
+        self.P1 = CPs.P_centre + r_st
+        self.P2 = CPe.P_centre + r_et
+
+        self.dist = [np.abs(ang_s) * CPs.r, np.linalg.norm(self.P1 - self.P2), np.abs(ang_e) * CPe.r]
+        self.curv = [-1 / CPs.circle_vec[-1], 0, -1 / CPe.circle_vec[-1]]
+
+        self.length = sum(self.dist)
+
+        self.ang_s = ang_s
+        self.ang_e = ang_e
+
+        self.ang_s_1 = ang_s_1
+        self.ang_s_2 = ang_s_2
+        self.ang_e_1 = ang_e_1
+        self.ang_e_2 = ang_e_2
+
 
 def optimal_path(P_s, theta_s, P_e, theta_e, radii):
     if P_s.shape[0] == 2:
@@ -408,6 +535,11 @@ def main():
     plt.axis("equal")
     plt.show()
 
+def main2():
+    l = Line(np.array([0.0, 0.2]), np.array([1.0, -0.5]))
+    p = l.interpolate_multi([0.0, 0.5, 1.0])
+    print(f"{p=}")
+
 
 if __name__ == "__main__":
-    main()
+    main2()
