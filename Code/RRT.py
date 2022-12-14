@@ -32,31 +32,46 @@ class RRTCalc:
 def meters2pixels(x):
     return x * 100
 
-def top_left_coodinates(point, size):
-    u = size/2
-    point_new_x = u[0] + point[0]
-    point_new_y = u[1] - point[1]
-    new_point = np.array([point_new_x, point_new_y])
-    return(new_point)
+def to_pygame_coords(point, window_size):
+    x_offset = window_size[0]/2
+    y_offset = window_size[1]/2
+    
+    x = point[0]
+    y = point[1]
+    
+    if y > 0:
+        y_new = y_offset - y
+    else:
+        y_new = y_offset + abs(y)
+    
+    if x > 0:
+        x_new = x_offset + x
+    else:
+        x_new = x_offset - abs(x)
+    
+    new_point = [x_new, y_new]
+    return new_point
 
 class RRTPlot():
     
     def __init__(self, start, goal, workspace_size, workspace_center, obstacles):
+        
         # Define start position and orientation of the robot
-        start_coords = meters2pixels(top_left_coodinates(start[:2], workspace_size))
-        self.start_x = start_coords[0]
-        self.start_y = start_coords[1]
+        start_coords = to_pygame_coords(start[:2], workspace_size)
+        self.start_x = meters2pixels(start_coords[0])
+        self.start_y = meters2pixels(start_coords[1])
         self.start_theta = start[2]
         
         # Define goal position and orientation of the robot  
-        goal_coords = meters2pixels(top_left_coodinates(goal[:2], workspace_size))
-        self.goal_x = goal_coords[0]
-        self.goal_y = goal_coords[1]
+        goal_coords = to_pygame_coords(goal[:2], workspace_size)
+        self.goal_x = meters2pixels(goal_coords[0])
+        self.goal_y = meters2pixels(goal_coords[1])
         self.goal_theta = goal[2]
         
         # Define workspace dimensions: length (x) and width (y)
         self.workspace_x = meters2pixels(workspace_size[0])
         self.workspace_y = meters2pixels(workspace_size[1])
+        self.workspace_size = workspace_size
         
         # Define center of the workspace 
         self.workspace_cx = meters2pixels(workspace_center[0])
@@ -65,7 +80,7 @@ class RRTPlot():
         # Read the obstacle information
         self.obstacles = obstacles
 
-        # Define some colour to be used
+        # Define some colours to be used
         self.green = (0, 255, 0)
         self.red = (255, 0, 0)
         self.white = (255, 255, 255)
@@ -90,29 +105,30 @@ class RRTPlot():
         
     def draw_obstacles(self):
         
-        
-        obstacle_coords = meters2pixels(top_left_coodinates(self.obstacles[:, :2], workspace_size))       
-        obstacles_x = obstacle_coords[:,0]
-        obstacles_y = obstacle_coords[:,1]
-        obstacles_theta = self.obstacles[:, 2]
-        obstacles_l = meters2pixels(self.obstacles[:, 3])
-        obstacles_w = meters2pixels(self.obstacles[:, 4])
-        
-        #obs_left = obstacles_x - obstacles_l/2
-        #obs_top = obstacles_y + obstacles_w/2
-        
         for i in range(len(self.obstacles)):
-            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacles_x[i], obstacles_y[i], obstacles_l[i], obstacles_w[i]))
+            
+            obstacle_coords = to_pygame_coords(self.obstacles[i,:2], self.workspace_size)
+            obstacle_x = meters2pixels(obstacle_coords[0])
+            obstacle_y = meters2pixels(obstacle_coords[1])
+            obstacle_theta = self.obstacles[i, 2]
+            obstacle_l = meters2pixels(self.obstacles[i, 3])
+            obstacle_w = meters2pixels(self.obstacles[i, 4])
+            
+            # Tranform reference point from cenetr of the rectangle to top-left corner of rectangle
+            obstacle_left = obstacle_x - obstacle_l/2
+            obstacle_top = obstacle_y - obstacle_w/2
+            
+            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacle_left, obstacle_top, obstacle_l, obstacle_w))
         
     
 # Define some sets of cooridnates
 workspace_center = np.array([0, 0]) # Coordinate center of workspace
-workspace_size = np.array([8, 8]) # Dimensions of workspace 
+workspace_size = np.array([6, 6]) # Dimensions of workspace 
 start = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
-goal = np.array([3, 3, 0]) # Goal position and orientation of robot (x, y, theta)
+goal = np.array([2, 2, 0]) # Goal position and orientation of robot (x, y, theta)
 
 # [x, y, rotation, length, width]
-obstacles = np.array([[0, 0, 0, 1, 0.5], [6, 6, 0, 1, 0.5]]) 
+obstacles = np.array([[3, 3, 0, 1, 1], [-1, -0, 0, 1, 0.5]]) 
 
 pygame.init()
 workspace = RRTPlot(start, goal, workspace_size, workspace_center, obstacles)
