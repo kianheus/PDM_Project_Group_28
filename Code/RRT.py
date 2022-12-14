@@ -38,8 +38,9 @@ def meters2pixels(x):
 
 class RRTPlot():
     
-    def __init__(self, start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles):
-        self.start_x = meters2pixels(start_x)
+    def __init__(self, start, goal, workspace_size, workspace_center, obstacles):
+        self.start = meters2pixels(start)
+        print(self.start)
         self.start_y = meters2pixels(start_y)
         
         self.goal_x = meters2pixels(goal_x)
@@ -74,33 +75,24 @@ class RRTPlot():
         obstacles_l = meters2pixels(self.obstacles[:, 3])
         obstacles_w = meters2pixels(self.obstacles[:, 4])
         
-        print(obstacles_x[1].shape)
-        print(obstacles_x[1])
+        obs_left = obstacles_x - obstacles_l/2
+        obs_top = obstacles_y + obstacles_w/2
         
         for i in range(len(self.obstacles)):
-            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacles_x[i], obstacles_y[i], obstacles_l[i], obstacles_w[i]))
+            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obs_left[i], obs_top[i], obstacles_l[i], obstacles_w[i]))
         
     
-
-workspace_center_x = 0
-workspace_center_y = 0
-
-workspace_x = 20
-workspace_y = 10
-
-start_x = 2
-start_y = 2
-start_theta = 0
-
-goal_x = 18
-goal_y = 8
+# Define some sets of cooridnates
+workspace_center = np.array([[0, 0]]) # Coordinate center of workspace
+workspace_size = np.array([[10, 10]]) # Dimensions of workspace 
+start = np.array([[2, 2, 0]]) # Starting position and orientation of robots (x, y, theta)
+goal = np.array([[8, 8, 0]]) # Goal position and orientation of robot (x, y, theta)
 
 # [x, y, rotation, length, width]
-obstacles = np.array([[5, 5, 0, 2, 2], [8, 8, 0, 2, 2]]) 
-
+obstacles = np.array([[1, 1, 0, 2, 1], [8, 8, 0, 2, 1]]) 
 
 pygame.init()
-workspace = RRTPlot(start_x, start_y, goal_x, goal_y, workspace_x, workspace_y, obstacles)
+workspace = RRTPlot(start, goal, workspace_size, workspace_center, obstacles)
 workspace.draw_workspace()
 pygame.display.update()
 pygame.event.clear()
@@ -136,3 +128,4 @@ plt.show()
 
 #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
 #plt.show()
+"""
