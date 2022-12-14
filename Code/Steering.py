@@ -67,6 +67,9 @@ class Circ3Path():
         if self.circle_vec[2] > 0:
             self.ang_1, self.ang_2 = self.ang_2, self.ang_1
 
+        self.ang_1 %= 2 * np.pi
+        self.ang_2 %= 2 * np.pi
+
         self.r_sP1 = self.P1 - self.CP_s.P_centre
         self.r_eP2 = self.P2 - self.CP_e.P_centre
 
@@ -78,9 +81,16 @@ class Circ3Path():
         self.ang_s_1 = np.arctan2(r_s[1], r_s[0])
         if self.CP_s.circle_vec[2] > 0:
             self.ang_s_1, self.ang_s_2 = self.ang_s_2, self.ang_s_1
+
+        self.ang_s_1 %= 2 * np.pi
+        self.ang_s_2 %= 2 * np.pi
+
         self.ang_e_2 = np.arctan2(r_e[1], r_e[0])
         if self.CP_e.circle_vec[2] > 0:
             self.ang_e_1, self.ang_e_2 = self.ang_e_2, self.ang_e_1
+
+        self.ang_e_1 %= 2 * np.pi
+        self.ang_e_2 %= 2 * np.pi
 
         self.ang_s = np.sign(-self.CP_s.circle_vec[2]) * ((self.ang_s_2 - self.ang_s_1) % (2 * np.pi))
         self.ang_m = np.sign(-self.circle_vec[2]) * ((self.ang_2 - self.ang_1) % (2 * np.pi))
@@ -112,6 +122,67 @@ class Circ3Path():
         print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
         print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
         print(f"Total = {sum(self.dist)}")
+
+    def interpolate(self, a):
+        assert(a <= 1.0)
+        assert(a >= 0.0)
+        point = np.array([0, 0])
+        d = a * sum(self.dist)  # the distance along the total path
+        cumd = np.cumsum(self.dist) # cumulative distance traveled
+        if d < cumd[0]:
+            # interpolate first section
+            b = d / self.dist[0]  # the interpolation distance between point 0 and 1 (value: 0-1)
+            
+            if np.sign(self.curv[0]) < 0:
+                b = 1 - b
+            # print(f"0{b=}, {np.sign(self.curv[0])=}")
+            ang = b * ((self.ang_s_2 - self.ang_s_1) % (2*np.pi)) + self.ang_s_1  # angle of point in arc
+            delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
+            point = self.CP_s.P_centre[0:2] + delta
+            pass
+        else:
+            if d < cumd[1]:
+                # interpolate second section1
+                b = (d - cumd[0]) / self.dist[1]  # the interpolation distance between point 1 and 2 (value: 0-1)
+                
+                if np.sign(self.curv[1]) < 0:
+                    b = 1 - b
+                # print(f"1{b=}, {np.sign(self.curv[1])=}")
+            
+                
+                # print(f"{self.ang_1=}")
+                # print(f"{self.ang_2=}")
+                # b *= np.sign(self.curv[1])
+                
+                ang = b * ((self.ang_2 - self.ang_1) % (2*np.pi)) + self.ang_1  # angle of point in arc
+                delta = np.array([np.cos(ang), np.sin(ang)]) * self.r
+                point = self.P_centre[0:2] + delta
+                pass
+            else:
+                # interpolate last section
+                b = (d - cumd[1]) / self.dist[2]  # the interpolation distance between point 2 and 3 (value: 0-1)
+                if np.sign(self.curv[2]) < 0:
+                    b = 1 - b
+                # print(f"2{b=}, {np.sign(self.curv[2])=}")
+                # b *= np.sign(self.curv[2])
+                ang = b * ((self.ang_e_2 - self.ang_e_1) % (2*np.pi)) + self.ang_e_1  # angle of point in arc
+                delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
+                point = self.CP_e.P_centre[0:2] + delta
+                pass
+
+        return point
+
+    def interpolate_multi(self, aa):
+        out = []
+        for a in aa:
+            out.append(self.interpolate(a))
+        return np.array(out)
+
+    def plot_interpolate(self, ax):
+        points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
+        ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+
+
 
 class FullPath():
     def __init__(self, CPs, CPe):
@@ -179,6 +250,55 @@ class FullPath():
         print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
         print(f"Total = {sum(self.dist)}")
 
+    def interpolate(self, a):
+        assert(a <= 1.0)
+        assert(a >= 0.0)
+        point = np.array([0, 0])
+        d = a * sum(self.dist)  # the distance along the total path
+        cumd = np.cumsum(self.dist) # cumulative distance traveled
+        if d < cumd[0]:
+            # interpolate first section
+            b = d / self.dist[0]  # the interpolation distance between point 0 and 1 (value: 0-1)
+            if np.sign(self.curv[0]) < 0:
+                b = 1 - b
+            ang = b * ((self.ang_s_2 - self.ang_s_1) % (2*np.pi)) + self.ang_s_1  # angle of point in arc
+            delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
+            point = self.CP_s.P_centre[0:2] + delta
+            pass
+        else:
+            if d < cumd[1]:
+                # interpolate second section1
+                b = (d - cumd[0]) / self.dist[1]  # the interpolation distance between point 1 and 2 (value: 0-1)
+                if np.sign(self.curv[1]) < 0:
+                    b = 1 - b
+                point = self.P1 + (self.P2 - self.P1) * b
+                point = point[0:2]
+                pass
+            else:
+                # interpolate last section
+                b = (d - cumd[1]) / self.dist[2]  # the interpolation distance between point 2 and 3 (value: 0-1)
+                if np.sign(self.curv[2]) < 0:
+                    b = 1 - b
+                ang = b * ((self.ang_e_2 - self.ang_e_1) % (2*np.pi)) + self.ang_e_1  # angle of point in arc
+                delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
+                point = self.CP_e.P_centre[0:2] + delta
+                pass
+
+        return point
+
+    def interpolate_multi(self, aa):
+        out = []
+        for a in aa:
+            out.append(self.interpolate(a))
+        return np.array(out)
+
+
+    def plot_interpolate(self, ax):
+        points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
+        print(f"{points=}")
+        ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+
+
 
 def optimal_path(P_s, theta_s, P_e, theta_e, radii):
     if P_s.shape[0] == 2:
@@ -216,7 +336,7 @@ def main():
     P_s = np.array([0, 0])
     theta_s = np.deg2rad(90)
 
-    P_e = np.array([0.5, 0.5])
+    P_e = np.array([0.5, 2.5])
     theta_e = np.deg2rad(-90)
 
     plt.figure()
@@ -268,6 +388,7 @@ def main():
     op.print()
 
     op.plot(ax, color="red", linewidth=3, alpha=0.8, points=False)
+    op.plot_interpolate(ax)
 
 
 
