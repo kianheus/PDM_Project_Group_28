@@ -9,11 +9,10 @@ from matplotlib import collections as mc
 start_time = time.time()
 class RRTCalc:
 
-    def __init__(self, start_x, start_y):
-        #self.graph_x = np.array([start_x])
-        #self.graph_y = np.array([start_y])
+    def __init__(self, start_x, start_y, n_line_segments = 100):
         self.graph_coords = np.array([[start_x, start_y]])
         self.graph_parent = np.array([0])
+        self.n_line_segments = n_line_segments
 
 
     def new_point(self):
@@ -25,9 +24,21 @@ class RRTCalc:
 
     def path_check(self, new_coord):
         closest_node_id = np.argmin(np.linalg.norm(self.graph_coords - new_coord, axis=1))
+        parent_coord = self.graph_coords[closest_node_id]
+        discrete_path = self.path_discretization(new_coord, parent_coord)
+        print("discrete path:", discrete_path.shape)
+        for i in range(len(discrete_path)):
+            #if discrete_path
+            pass
         self.graph_coords = np.append(self.graph_coords, np.array([new_coord]), axis = 0)
         self.graph_parent = np.append(self.graph_parent, closest_node_id)
         return()
+
+    def path_discretization(self, new_coord, parent_coord):
+        return zip(np.linspace(parent_coord[0], new_coord[0], self.n_line_segments+1),
+                   np.linspace(parent_coord[1], new_coord[1], self.n_line_segments+1))
+
+
 
 def meters2pixels(x):
     return x * 100
@@ -83,6 +94,9 @@ workspace_center = np.array([[0, 0]]) # Coordinate center of workspace
 workspace_size = np.array([[10, 10]]) # Dimensions of workspace 
 start = np.array([[2, 2, 0]]) # Starting position and orientation of robots (x, y, theta)
 goal = np.array([[8, 8, 0]]) # Goal position and orientation of robot (x, y, theta)
+
+#Computational variables
+n_line_segments = 100
 
 # [x, y, rotation, length, width]
 obstacles = np.array([[1, 1, 0, 2, 1], [8, 8, 0, 2, 1]]) 
