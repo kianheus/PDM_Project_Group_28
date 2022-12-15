@@ -190,7 +190,19 @@ class Path():
         if d is not None:
             n = (int) (np.round(self.length / d) + 1)
         return self.interpolate_multi(np.linspace(0.0, 1.0, n))
-
+    
+    def interpolate_angles(self, n=100, d=None, fdt=0.0001):
+        if d is not None:
+            n = (int) (np.round(self.length / d) + 1)
+        dt = fdt * self.length / (n - 1)
+        aa = np.linspace(0.0, 1.0-dt, n)
+        bb = aa + dt
+        points_a = self.interpolate_multi(aa)
+        points_b = self.interpolate_multi(bb)
+        diff = points_b - points_a
+        mid = (points_a + points_b) / 2
+        angles = np.arctan2(diff[:,1], diff[:,0])
+        return (mid, angles)
 
 class PathTST(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
@@ -311,7 +323,7 @@ def optimal_path(P_s, theta_s, P_e, theta_e, radius) -> Path:
     return opt
 
 # Helper function to plot a point with a direction
-def plot_point(ax, P, theta, color, length=0.1, label=None):
+def plot_point(ax, P, theta, color="blue", length=0.1, label=None):
     ax.scatter(P[0], P[1], color=color)
     ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3, label=label)
 
@@ -362,9 +374,19 @@ def main3():
     plot_point(ax, P_e, theta_e, 'blue')
 
     path = optimal_path(P_s, theta_s, P_e, theta_e, 0.2)
-    path.plot_interpolate(ax, d=0.1)
+    # path.plot_interpolate(ax, d=0.1)
+    points, angles = path.interpolate_angles(30)
+    print(f"{points=}")
+    print(f"{angles=}")
+    for p, a in zip(points, angles):
+        plot_point(ax, p, a, length=0.02)
     path.print()
     path.plot(ax, color="red", linewidth=1, alpha=0.5)
+
+    print(f"{points[0,:]} == {P_s}")
+    print(f"{points[-1,:]} == {P_e}")
+    print(f"{angles[0]} == {theta_s}")
+    print(f"{angles[-1]} == {theta_e}")
 
     plt.ylim(-5, 5)
     plt.xlim(-5, 5)
