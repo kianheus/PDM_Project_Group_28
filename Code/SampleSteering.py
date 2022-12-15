@@ -25,3 +25,9 @@ length = shortest_path.length
 
 print(f"{points=}")
 print(f"{length=}")
+
+# The first point in the path list is equal to the starting point (within floating point error)
+print(f"{points[0,:]} == {point_start}")
+
+# The last point in the path list is equal to the ending point (within floating point error)
+print(f"{points[-1,:]} == {point_end}")
