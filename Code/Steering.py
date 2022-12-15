@@ -164,30 +164,33 @@ class Path():
         for segment in self.segments:
             segment.plot(ax, **kwargs)
 
-    def plot_interpolate(self, ax, n=100):
-        points = self.interpolate_n(n)
+    def plot_interpolate(self, ax, n=100, d=None):
+        points = self.interpolate(n, d)
         ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
-    def interpolate(self, a):
+    def interpolate_single(self, a):
         assert(a <= 1.0)
         assert(a >= 0.0)
         d = a * self.length  # the distance along the total path
-        cumds = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
-        padded_cumds = np.hstack((0.0, cumds))
-        for i, (segment, cumd, padded_cumd) in enumerate(zip(self.segments, cumds, padded_cumds)):
-            if d <= cumd:
-                b = (d-padded_cumd) / segment.length
+        d_cumulative = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
+        d_cumulative_padded = np.hstack((0.0, d_cumulative))
+        for i, (segment, d_c, d_cp) in enumerate(zip(self.segments, d_cumulative, d_cumulative_padded)):
+            if d <= d_c:
+                b = (d-d_cp) / segment.length
                 return segment.interpolate_single(b)
         return None
 
     def interpolate_multi(self, aa):
         points = []
         for a in aa:
-            points.append(self.interpolate(a)[0:2])
+            points.append(self.interpolate_single(a)[0:2])
         return np.array(points)
 
-    def interpolate_n(self, n=100):
+    def interpolate(self, n=100, d=None):
+        if d is not None:
+            n = (int) (np.round(self.length / d) + 1)
         return self.interpolate_multi(np.linspace(0.0, 1.0, n))
+
 
 class PathTST(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
@@ -295,7 +298,7 @@ class PathTTT(Path):
 
 # Function that generates the shortest path from start to end with a specified turning radius
 # Returns a Path object
-def optimal_path(P_s, theta_s, P_e, theta_e, radius):
+def optimal_path(P_s, theta_s, P_e, theta_e, radius) -> Path:
     path1 = PathTTT.optimal(P_s, theta_s, radius, P_e, theta_e, radius, radius)
     path2 = PathTST.optimal(P_s, theta_s, radius, P_e, theta_e, radius)
     opt_len = np.inf
@@ -359,7 +362,7 @@ def main3():
     plot_point(ax, P_e, theta_e, 'blue')
 
     path = optimal_path(P_s, theta_s, P_e, theta_e, 0.2)
-    path.plot_interpolate(ax)
+    path.plot_interpolate(ax, d=0.1)
     path.print()
     path.plot(ax, color="red", linewidth=1, alpha=0.5)
 
@@ -371,4 +374,4 @@ def main3():
 
 
 if __name__ == "__main__":
-    main2()
+    main3()
