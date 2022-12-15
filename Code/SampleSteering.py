@@ -1,3 +1,5 @@
+# This code shows how to use the Dubins Path generator in Steering.py
+
 import Steering as steer
 import numpy as np
 
