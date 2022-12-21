@@ -6,43 +6,62 @@ from sys import exit
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
+import Steering as steer
+from tqdm import tqdm
+
+user = "Kian"
 
 start_time = time.time()
 class RRTCalc:
 
-    def __init__(self, start_x, start_y, obstacles, n_line_segments = 100):
-        self.graph_coords = np.array([[start_x, start_y]])
-        self.graph_parent = np.array([0])
+    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, n_line_segments = 100):
+        self.graph_coords = np.array([[start_x, start_y, start_theta]])
+        self.graph_parent_idx = np.array([0])
         self.n_line_segments = n_line_segments
         self.obstacles = obstacles
         self.colours = np.array([["blue"]])
+        self.collision_resolution = collision_resolution
+        self.radius = radius
+        self.steering_paths = []
 
 
     def new_point(self):
         collision = True
         while collision:
-            new_coord = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
+            new_xy = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
+            new_theta = np.random.uniform(0, 2*np.pi)
+            new_coord = np.hstack((new_xy, new_theta))
             collision = self.collision_check(new_coord)
         self.path_check(new_coord)
 
     def path_check(self, new_coord):
-        closest_node_id = np.argmin(np.linalg.norm(self.graph_coords - new_coord, axis=1))
+        closest_distance = np.min(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
+        upper_bound = closest_distance + 7/3 * np.pi * self.radius
+        valid_indices = np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1) <= upper_bound
+        potential_steering_paths = []
+        for idx in np.arange(len(valid_indices))[valid_indices]:
+            potential_steering_paths.append(steer.optimal_path(self.graph_coords[idx], new_coord, self.radius))
+        shortest_path_idx = np.argmin([path.length for path in potential_steering_paths])
+        
+        steering_path = potential_steering_paths[shortest_path_idx]
+        parent_coord_idx = np.arange(len(valid_indices))[valid_indices][shortest_path_idx]
+
+        discrete_path = steering_path.interpolate(d=self.collision_resolution)
+
+        """
+        closest_node_id = np.argmin(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
         parent_coord = self.graph_coords[closest_node_id]
-        discrete_path = self.path_discretization(new_coord, parent_coord)
+        """
         collision = False
         for i in range(len(discrete_path)):
             collision = self.collision_check(discrete_path[i])
             if collision:
                 break
-        """
+
         if not collision:
-            self.colours = np.append(self.colours, np.array(["blue"]))
-        else:
-            self.colours = np.append(self.colours, np.array(["red"]))
-        """
-        if not collision:
+            self.steering_paths.append(steering_path)
             self.graph_coords = np.append(self.graph_coords, np.array([new_coord]), axis = 0)
-            self.graph_parent = np.append(self.graph_parent, closest_node_id)
+            self.graph_parent_idx = np.append(self.graph_parent_idx, parent_coord_idx)
         return()
 
     def collision_check(self, point):
@@ -162,8 +181,10 @@ n_line_segments = 100
 
 # [x, y, rotation, length, width]
 obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
+radius = 0.5
+collision_resolution = 0.05
 
-user = "Paula"
+
 
 
 if user == "Paula":
@@ -181,29 +202,30 @@ if user == "Paula":
                 exit()
 
 if user == "Kian":
-    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], obstacles)
-    for i in range(2000):
-        if i%100 == 0 and i>0:
-            print(i)
+    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius)
+    for i in tqdm(range(300)): #range(200): #
         RRT_calculator.new_point()
 
 
-
+    """
     lines = []
-    for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent)):
-        line = [RRT_calculator.graph_coords[i,:], (RRT_calculator.graph_coords[parent, :])]
+    for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent_idx)):
+        line = [RRT_calculator.graph_coords[i,:2], (RRT_calculator.graph_coords[parent,:2])]
         lines.append(line)
     lc = mc.LineCollection(lines, linewidths=2)#, colors = RRT_calculator.colours)
-
-
+    """
 
     fig, ax = plt.subplots()
+    for path in RRT_calculator.steering_paths:
+        path.plot(ax, color="blue")
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
-    ax.add_collection(lc)
+    plt.axis("equal")
+    #ax.add_collection(lc)
     for i in range(obstacles.shape[0]):
         ax.add_patch(patches.Rectangle((obstacles[i][0]-obstacles[i][3]/2,obstacles[i][1]-obstacles[i][4]/2), obstacles[i][3], obstacles[i][4]))
     plt.show()
 
     #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
     #plt.show()
+
