@@ -141,9 +141,12 @@ class Path():
                 print(f"distance = {segment.length:.04}, curve = {segment.curvature:.04}")
             print(f"Total = {self.length}")
 
-    def plot(self, ax, **kwargs):
+    def plot(self, ax, endpoint=False, **kwargs):
         for segment in self.segments:
             segment.plot(ax, **kwargs)
+        if endpoint:
+            point_end, angle_end = self.interpolate_angles(n=2)
+            plot_point(ax, point_end[-1], angle_end[-1])
 
     def plot_interpolate(self, ax, n=100, d=None):
         points = self.interpolate(n, d)

@@ -39,9 +39,11 @@ class RRTCalc:
         collision = True
         while collision:
             new_xy = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
-            new_theta = np.random.uniform(0, 2*np.pi)
-            new_coord = np.hstack((new_xy, new_theta))
-            collision = self.collision_check(new_coord)
+            collision = self.collision_check(new_xy)
+        # new_theta = np.random.uniform(0, 2*np.pi)
+        new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
+        # new_theta = 0
+        new_coord = np.hstack((new_xy, new_theta))
         self.path_check(new_coord)
 
     def path_check(self, new_coord):
@@ -49,7 +51,12 @@ class RRTCalc:
         upper_bound = closest_distance + 7/3 * np.pi * self.radius
         valid_indices = np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1) <= upper_bound
         potential_steering_paths = []
+        angle_random = new_coord[2]
         for idx in np.arange(len(valid_indices))[valid_indices]:
+            displacement = (new_coord - self.graph_coords[idx])[:2]
+            angle_displacement = np.arctan2(displacement[1], displacement[0])
+            angle = (angle_displacement + angle_random) % (np.pi * 2)
+            new_coord[2] = angle
             potential_steering_paths.append(steer.optimal_path(self.graph_coords[idx], new_coord, self.radius))
         shortest_path_idx = np.argmin([path.length for path in potential_steering_paths])
         
@@ -220,7 +227,7 @@ if user == "Paula":
 
 if user == "Kian":
     RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius, vehicle_radius=0.1)
-    for i in tqdm(range(1000)): #range(200): #
+    for i in tqdm(range(3000)): #range(200): #
         RRT_calculator.new_point()
 
 
@@ -234,7 +241,7 @@ if user == "Kian":
 
     fig, ax = plt.subplots()
     for path in RRT_calculator.steering_paths:
-        path.plot(ax, color="red", linewidth=1, alpha=0.8)
+        path.plot(ax, endpoint=True, color="red", linewidth=1, alpha=0.8)
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
     plt.axis("equal")
