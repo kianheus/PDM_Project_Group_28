@@ -14,7 +14,7 @@ class Car(core.Env):
 
         self.data = mujoco.MjData(self.model)
 
-        #self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
+        self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
 
 
     def reset(self):
