@@ -7,9 +7,9 @@ from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 import Steering as steer
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
-user = "Kian"
+user = "thomas"
 
 import sys
 sys.path.append("../mujoco")
@@ -21,78 +21,127 @@ env = carenv.Car(render=False)
 state, obstacles = env.reset() #start with reset
 obstacles[:,3:] = obstacles[:,3:]*2 
 
-start_time = time.time()
-class RRTCalc:
 
-    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, vehicle_radius, n_line_segments = 100):
-        self.graph_coords = np.array([[start_x, start_y, start_theta]])
-        self.graph_parent_idx = np.array([0])
-        self.n_line_segments = n_line_segments
+def pose_deg(x, y, t):
+    return np.array([x, y, np.deg2rad(t)])
+
+
+class Node():
+    def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
+        self.pose = pose
+        self.parent_node = parent_node
+        self.parent_edge = parent_edge
+        self.distance_from_origin = distance_from_parent
+        if parent_node is not None:
+            # print(f"{parent_node=}")
+            self.distance_from_origin += parent_node.distance_from_origin
+
+class Edge():
+    def __init__(self, start_node : Node, path : steer.Path):
+        self.start_node = start_node
+        self.path = path
+        self.end_node = Node(path.end_pose, self.path.length, self.start_node, self)
+
+
+class Map():
+    def __init__(self, obstacles : np.ndarray, vehicle_radius : float):
         self.obstacles = obstacles
-        self.colours = np.array([["blue"]])
-        self.collision_resolution = collision_resolution
-        self.radius = radius
-        self.steering_paths = []
         self.vehicle_radius = vehicle_radius
 
+    def collision_check(self, points : np.ndarray) -> bool:
+        points = np.atleast_2d(points)
+        for point in points:
+            for obstacle in self.obstacles:
+                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
+                    return True
+        return False
 
-    def new_point(self):
+    def collision_check_single(self, point : np.ndarray) -> bool:
+        for obstacle in self.obstacles:
+            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
+                return True
+        return False
+
+    def random_position(self) -> np.ndarray:
         collision = True
         while collision:
             new_xy = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
             collision = self.collision_check(new_xy)
-        # new_theta = np.random.uniform(0, 2*np.pi)
-        new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
-        # new_theta = 0
-        new_coord = np.hstack((new_xy, new_theta))
-        self.path_check(new_coord)
+        return new_xy
 
-    def path_check(self, new_coord):
-        closest_distance = np.min(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
-        upper_bound = closest_distance + 7/3 * np.pi * self.radius
-        valid_indices = np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1) <= upper_bound
-        potential_steering_paths = []
+    def random_pose(self) -> np.ndarray:
+        new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
+        return np.hstack((self.random_position(), new_theta))
+
+    def plot(self, ax : plt.Axes):
+        for obstacle in self.obstacles:
+            ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2,obstacle[1]-obstacle[4]/2), obstacle[3], obstacle[4]))
+
+
+class Tree():
+    def __init__(self, map : Map, turning_radius : float, initial_pose : np.ndarray, collision_resolution : float):
+        self.map = map
+        self.base_node = Node(initial_pose)
+        self.edges : list[Edge] = []
+        self.node_poses = np.array([initial_pose])
+        self.turning_radius = turning_radius
+        self.collision_resolution = collision_resolution
+
+    def add_node(self, start_node : Node, path : steer.Path):
+        node = start_node
+        for segment in path.segments:
+            path_new = steer.PathSimple(segment)
+            new_edge = Edge(node, path_new)
+            self.edges.append(new_edge)
+            self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
+            node = new_edge.end_node
+        # print("Added new node")
+
+    def grow_single(self):
+        self.add_path_to(self.map.random_pose())
+
+
+    def add_path_to(self, new_coord : np.ndarray, modify_angle=True) -> bool:
+        closest_distance = np.min(np.linalg.norm(self.node_poses[:,:2] - new_coord[:2], axis=1))
+        upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
+        valid_indices = np.linalg.norm(self.node_poses[:,:2] - new_coord[:2], axis=1) <= upper_bound
+        valid_indices = np.arange(len(valid_indices))[valid_indices]
+
+        potential_steering_paths : list[steer.Path] = []
         angle_random = new_coord[2]
-        for idx in np.arange(len(valid_indices))[valid_indices]:
-            displacement = (new_coord - self.graph_coords[idx])[:2]
-            angle_displacement = np.arctan2(displacement[1], displacement[0])
-            angle = (angle_displacement + angle_random) % (np.pi * 2)
-            new_coord[2] = angle
-            potential_steering_paths.append(steer.optimal_path(self.graph_coords[idx], new_coord, self.radius))
+
+        for idx in valid_indices:
+            if modify_angle:
+                displacement = (new_coord - self.node_poses[idx])[:2]
+                angle_displacement = np.arctan2(displacement[1], displacement[0])
+                angle = (angle_displacement + angle_random) % (np.pi * 2)
+                new_coord[2] = angle
+            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_coord, self.turning_radius))
+
         shortest_path_idx = np.argmin([path.length for path in potential_steering_paths])
         
         steering_path = potential_steering_paths[shortest_path_idx]
-        parent_coord_idx = np.arange(len(valid_indices))[valid_indices][shortest_path_idx]
+        parent_coord_idx = valid_indices[shortest_path_idx]
 
         discrete_path = steering_path.interpolate(d=self.collision_resolution)
 
-        """
-        closest_node_id = np.argmin(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
-        parent_coord = self.graph_coords[closest_node_id]
-        """
-        collision = False
-        for i in range(len(discrete_path)):
-            collision = self.collision_check(discrete_path[i])
-            if collision:
-                break
+        collision = self.map.collision_check(discrete_path)
+        if collision:
+            return False
 
-        if not collision:
-            self.steering_paths.append(steering_path)
-            self.graph_coords = np.append(self.graph_coords, np.array([new_coord]), axis = 0)
-            self.graph_parent_idx = np.append(self.graph_parent_idx, parent_coord_idx)
-        return()
+        # print(f"{parent_coord_idx=}")
+        # print(f"{len(self.edges)=}")
+        # print(f"{self.node_poses.shape=}")
+        if parent_coord_idx == 0:
+            self.add_node(self.base_node, steering_path)
+        else:
+            self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
 
-    def collision_check(self, point):
-        for obstacle in self.obstacles:
-            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                return(True)
-                break
-        return(False)
+        return True
 
-    def path_discretization(self, new_coord, parent_coord):
-        return(np.array([np.linspace(parent_coord[0], new_coord[0], self.n_line_segments),
-                   np.linspace(parent_coord[1], new_coord[1], self.n_line_segments)]).T)
+
 
 
 
@@ -200,8 +249,8 @@ n_line_segments = 100
 
 # [x, y, rotation, length, width]
 # obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
-radius = 0.5
-collision_resolution = 0.05
+turning_radius = 2.0
+collision_resolution = 0.1
 
 
 
@@ -227,7 +276,7 @@ if user == "Paula":
                     exit()
 
 if user == "Kian":
-    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius, vehicle_radius=0.1)
+    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, turning_radius, vehicle_radius=0.1)
     for i in tqdm(range(3000)): #range(200): #
         RRT_calculator.new_point()
 
@@ -254,3 +303,52 @@ if user == "Kian":
     #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
     #plt.show()
 
+if user == "thomas":
+    env_map = Map(obstacles, 0.1)
+
+    initial_pose = pose_deg(0.0, 0.0, 0)
+    final_pose = pose_deg(0.0, 0.0, 180)
+
+    tree = Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=0.05)
+    done = False
+    for i in trange(500):
+        tree.grow_single()
+        done = tree.add_path_to(final_pose, modify_angle=False)
+        if done:
+            break
+
+    
+    
+    fig, ax = plt.subplots()
+    env_map.plot(ax)
+
+    for edge in tree.edges:
+        # print("edge")
+        edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+
+    if done:
+        print("Done!")
+        node = tree.edges[-1].end_node
+        print(f"distance = {node.distance_from_origin:.02f}")
+        dist = 0
+        while node is not None:
+            # edge.path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0)
+            # steer.plot_point(ax, node.pose[:2], node.pose[2], color="orange")
+            if node.parent_edge is not None:
+                path : steer.Path = node.parent_edge.path
+                dist += path.length
+                path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+            node = node.parent_node
+
+        print(f"distance = {dist:.02f}")
+        
+
+    steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
+    steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+
+    ax.set_xlim(-4, 4)
+    ax.set_ylim(-4, 4)
+    plt.axis("equal")
+
+    
+    plt.show()
