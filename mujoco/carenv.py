@@ -60,7 +60,32 @@ class Car(core.Env):
         rl = R.from_quat(quat)
         orientation = - (rl.as_euler('xyz')[0] - np.pi)
         return orientation
+        
+    def get_obstacles_simple(self):
+        
+        obs = np.array([np.hstack(([self.data.body('wall1').xpos[0:2], self.quat_to_degree(self.data.body('wall1').xquat), self.model.geom('wall1').size[0:2]])),
+                        np.hstack(([self.data.body('wall2').xpos[0:2], self.quat_to_degree(self.data.body('wall2').xquat), self.model.geom('wall2').size[0:2]])),
+                        np.hstack(([self.data.body('wall3').xpos[0:2], self.quat_to_degree(self.data.body('wall3').xquat), self.model.geom('wall3').size[0:2]])),
+                        np.hstack(([self.data.body('wall4').xpos[0:2], self.quat_to_degree(self.data.body('wall4').xquat), self.model.geom('wall4').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall1').xpos[0:2], self.quat_to_degree(self.data.body('wallhall1').xquat), self.model.geom('wallhall1').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall2').xpos[0:2], self.quat_to_degree(self.data.body('wallhall2').xquat), self.model.geom('wallhall2').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall3').xpos[0:2], self.quat_to_degree(self.data.body('wallhall3').xquat), self.model.geom('wallhall3').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall4').xpos[0:2], self.quat_to_degree(self.data.body('wallhall4').xquat), self.model.geom('wallhall4').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall5').xpos[0:2], self.quat_to_degree(self.data.body('wallhall5').xquat), self.model.geom('wallhall5').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall6').xpos[0:2], self.quat_to_degree(self.data.body('wallhall6').xquat), self.model.geom('wallhall6').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall7').xpos[0:2], self.quat_to_degree(self.data.body('wallhall7').xquat), self.model.geom('wallhall7').size[0:2]])),
+                        np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]]))])
+
+        return obs
     
+    def get_time(self):
+        time = self.data.time
+        return time
+    
+    def close_window(self):
+        self.viewer.close()
+    
+    """
     def get_obstacles(self):
         
         def view1D(a, b): # a, b are arrays
@@ -97,28 +122,4 @@ class Car(core.Env):
         #print('size = ',self.model.geom_size[1:ngeom+1])
         #print(self.data.geom('wall1').xpos)
         #print(self.model.geom('wall1').size)
-        
-    def get_obstacles_simple(self):
-        
-        obs = np.array([np.hstack(([self.data.body('wall1').xpos[0:2], self.quat_to_degree(self.data.body('wall1').xquat), self.model.geom('wall1').size[0:2]])),
-                        np.hstack(([self.data.body('wall2').xpos[0:2], self.quat_to_degree(self.data.body('wall2').xquat), self.model.geom('wall2').size[0:2]])),
-                        np.hstack(([self.data.body('wall3').xpos[0:2], self.quat_to_degree(self.data.body('wall3').xquat), self.model.geom('wall3').size[0:2]])),
-                        np.hstack(([self.data.body('wall4').xpos[0:2], self.quat_to_degree(self.data.body('wall4').xquat), self.model.geom('wall4').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall1').xpos[0:2], self.quat_to_degree(self.data.body('wallhall1').xquat), self.model.geom('wallhall1').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall2').xpos[0:2], self.quat_to_degree(self.data.body('wallhall2').xquat), self.model.geom('wallhall2').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall3').xpos[0:2], self.quat_to_degree(self.data.body('wallhall3').xquat), self.model.geom('wallhall3').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall4').xpos[0:2], self.quat_to_degree(self.data.body('wallhall4').xquat), self.model.geom('wallhall4').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall5').xpos[0:2], self.quat_to_degree(self.data.body('wallhall5').xquat), self.model.geom('wallhall5').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall6').xpos[0:2], self.quat_to_degree(self.data.body('wallhall6').xquat), self.model.geom('wallhall6').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall7').xpos[0:2], self.quat_to_degree(self.data.body('wallhall7').xquat), self.model.geom('wallhall7').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]]))])
-
-        return obs
-    
-    def get_time(self):
-        time = self.data.time
-        return time
-    
-    def close_window(self):
-        self.viewer.close()
-        
+    """    
