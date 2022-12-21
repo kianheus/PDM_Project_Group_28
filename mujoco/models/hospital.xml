@@ -29,7 +29,7 @@
     </body>
 
     <body name="wall2" pos="10.050000 0.000000 0.250000" euler="0 0 0.000000">
-    	<geom name="wall2" type="box" contype="1" conaffinity="1" size="0.050000 10.000000 0.750000"/>
+    	<geom name="wall2" type="box" contype="1" conaffinity="1" size="0.050000 10.100000 0.750000"/>
     </body>
 
     <body name="wall3" pos="0.000000 -10.050000 0.250000" euler="0 0 0.000000">
@@ -37,7 +37,7 @@
     </body>
 
     <body name="wall4" pos="-10.050000 0.000000 0.250000" euler="0 0 0.000000">
-    	<geom name="wall4" type="box" contype="1" conaffinity="1" size="0.050000 10.000000 0.750000"/>
+    	<geom name="wall4" type="box" contype="1" conaffinity="1" size="0.050000 10.100000 0.750000"/>
     </body>
 
     <body name="wallhall1" pos="0 2 0.250000" euler="0 0 0.000000">
@@ -57,19 +57,19 @@
     </body>   
 
     <body name="wallhall5" pos="9 2 0.250000" euler="0 0 0.000000">
-    	<geom name="wallhall5" type="box" contype="1" conaffinity="1" size="1 0.05 0.750000"/>
+    	<geom name="wallhall5" type="box" contype="1" conaffinity="1" size="1.1 0.05 0.750000"/>
     </body>
 
     <body name="wallhall6" pos="-9 2 0.250000" euler="0 0 0.000000">
-    	<geom name="wallhall6" type="box" contype="1" conaffinity="1" size="1 0.05 0.750000"/>
+    	<geom name="wallhall6" type="box" contype="1" conaffinity="1" size="1.1 0.05 0.750000"/>
     </body>
 
     <body name="wallhall7" pos="9 -2 0.250000" euler="0 0 0.000000">
-    	<geom name="wallhall7" type="box" contype="1" conaffinity="1" size="1 0.05 0.750000"/>
+    	<geom name="wallhall7" type="box" contype="1" conaffinity="1" size="1.1 0.05 0.750000"/>
     </body>
 
     <body name="wallhall8" pos="-9 -2 0.250000" euler="0 0 0.000000">
-    	<geom name="wallhall8" type="box" contype="1" conaffinity="1" size="1 0.05 0.750000"/>
+    	<geom name="wallhall8" type="box" contype="1" conaffinity="1" size="1.1 0.05 0.750000"/>
     </body> 
 
   </worldbody>
