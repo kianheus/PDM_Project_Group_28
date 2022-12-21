@@ -27,7 +27,7 @@ class Car(core.Env):
         #extract car and world data
         data = self.get_sensor_data()
         obstacles = self.get_obstacles_simple()
-        state = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
+        state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
 
         return state, obstacles
 
@@ -41,7 +41,7 @@ class Car(core.Env):
 
         obstacles = self.get_obstacles_simple()
 
-        state = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
+        state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
 
         return state, obstacles
 

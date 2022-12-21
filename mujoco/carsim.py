@@ -53,12 +53,12 @@ while True:
         
     ########################## heading + longitudal + lateral error ##########################
     #heading
-    theta = state['theta']
+    theta = state[2]
     theta_error = ((thetar-theta+np.pi) % (2*np.pi)) - np.pi #multiple rotations without sudden gap between 0 and 2pi   
     
     print(theta_error)
     #longitudal + lateral
-    p = np.array([state['x'], state['y']]) 
+    p = np.array([state[0], state[1]]) 
     distance = np.linalg.norm(pr - p) #total distance 
     angle = np.arctan2(p[1]-pr[1],p[0]-pr[0]) #subtract reference
     difference_angle = thetar - angle    
