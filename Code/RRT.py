@@ -7,6 +7,19 @@ from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 
+
+
+import sys
+sys.path.append('../mujoco')
+sys.path.append('../mujoco/models')
+
+import carenv
+
+env = carenv.Car()
+state, obstacles = env.reset() #start with reset
+
+#import carsim
+
 start_time = time.time()
 class RRTCalc:
 
@@ -60,7 +73,7 @@ class RRTCalc:
 
 
 def meters2pixels(x):
-    return x * 100
+    return x * 30
 
 def to_pygame_coords(point, window_size):
     x_offset = window_size[0]/2
@@ -69,6 +82,9 @@ def to_pygame_coords(point, window_size):
     x = point[0]
     y = point[1]
 
+    #x_new = x - x_offset
+    #y_new = y_offset - y
+    
     if y > 0:
         y_new = y_offset - y
     else:
@@ -153,7 +169,7 @@ class RRTPlot():
 
 # Define some sets of cooridnates
 workspace_center = np.array([0, 0]) # Coordinate center of workspace
-workspace_size = np.array([8, 8]) # Dimensions of workspace
+workspace_size = np.array([30, 30]) # Dimensions of workspace
 start_coord = np.array([-2, -2, 0]) # Starting position and orientation of robots (x, y, theta)
 goal_coord = np.array([3, 3, 0]) # Goal position and orientation of robot (x, y, theta)
 
@@ -161,7 +177,7 @@ goal_coord = np.array([3, 3, 0]) # Goal position and orientation of robot (x, y,
 n_line_segments = 100
 
 # [x, y, rotation, length, width]
-obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
+#obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
 
 user = "Paula"
 
@@ -179,6 +195,12 @@ if user == "Paula":
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+            if event.type==pygame.KEYDOWN:
+                if event.key==pygame.K_c:
+                    intro=False
+                if event.key==pygame.K_q:
+                    pygame.quit()
+                    exit()
 
 if user == "Kian":
     RRT_calculator = RRTCalc(start_coord[0], start_coord[1], obstacles)

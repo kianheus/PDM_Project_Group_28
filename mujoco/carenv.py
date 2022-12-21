@@ -9,11 +9,13 @@ class Car(core.Env):
                       
     def __init__(self):
         
-        self.model = mujoco.MjModel.from_xml_path('models/hospital.xml')
+        
+        
+        self.model = mujoco.MjModel.from_xml_path('../mujoco/models/hospital.xml')
         
         self.data = mujoco.MjData(self.model)
         
-        self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
+        #self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
     
         
     def reset(self):
