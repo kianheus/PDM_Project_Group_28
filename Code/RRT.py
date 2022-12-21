@@ -13,6 +13,7 @@ user = "Kian"
 
 import sys
 sys.path.append("../mujoco")
+sys.path.append("mujoco")
 
 import carenv
 
