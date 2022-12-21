@@ -7,19 +7,10 @@ from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 
-
-
-import sys
-sys.path.append('../mujoco')
-sys.path.append('../mujoco/models')
-
 import carenv
-
-env = carenv.Car()
+env = carenv.Car(render=False)
 state, obstacles = env.reset() #start with reset
 obstacles[:,3:] = obstacles[:,3:]*2 
-
-#import carsim
 
 start_time = time.time()
 class RRTCalc:
@@ -82,9 +73,6 @@ def to_pygame_coords(point, window_size):
 
     x = point[0]
     y = point[1]
-
-    #x_new = x - x_offset
-    #y_new = y_offset - y
     
     if y > 0:
         y_new = y_offset - y
@@ -171,7 +159,8 @@ class RRTPlot():
 # Define some sets of cooridnates
 workspace_center = np.array([0, 0]) # Coordinate center of workspace
 workspace_size = np.array([30, 30]) # Dimensions of workspace
-start_coord = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
+start_coord = state
+#start_coord = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
 goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
 
 #Computational variables
