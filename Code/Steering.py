@@ -291,7 +291,11 @@ class PathTTT(Path):
 
 # Function that generates the shortest path from start to end with a specified turning radius
 # Returns a Path object
-def optimal_path(P_s, theta_s, P_e, theta_e, radius) -> Path:
+def optimal_path(point_start, point_end, radius) -> Path:
+    P_s = point_start[:2]
+    theta_s = point_start[2]
+    P_e = point_end[:2]
+    theta_e = point_end[2]
     path1 = PathTTT.optimal(P_s, theta_s, radius, P_e, theta_e, radius, radius)
     path2 = PathTST.optimal(P_s, theta_s, radius, P_e, theta_e, radius)
     opt_len = np.inf
