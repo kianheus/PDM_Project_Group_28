@@ -161,9 +161,9 @@ goal_coord = np.array([3, 3, 0]) # Goal position and orientation of robot (x, y,
 n_line_segments = 100
 
 # [x, y, rotation, length, width]
-obstacles = np.array([[0, 0, 0, 1, 1.5], [3, 3, 0, 1, 0.5]])
+obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
 
-user = "Kian"
+user = "Paula"
 
 
 if user == "Paula":
