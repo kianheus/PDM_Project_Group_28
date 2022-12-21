@@ -3,40 +3,28 @@ import mujoco
 import mujoco_viewer
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-import random
 
 class Car(core.Env):
                       
     def __init__(self):
         
+        #open model
         self.model = mujoco.MjModel.from_xml_path('models/hospital.xml')
-        
         self.data = mujoco.MjData(self.model)
         
+        #open viewer
         self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
-    
-        
+      
     def reset(self):
         
-        """
-        self.model.geom('wall1').size = np.array([10.1,0.05,0.25])
-        self.model.geom('wall2').size = np.array([0.05, 10, 0.25])
-        self.model.geom('wall3').size = np.array([10.1,0.05,0.25])
-        self.model.geom('wall4').size = np.array([0.05,10,0.25])
-        """
-        
-        
+        #reset mujoco model
         mujoco.mj_resetCallbacks()
         mujoco.mj_resetData(self.model, self.data)
-
+        mujoco.mj_step(self.model, self.data) #set one step of model to be sure that everything is initialised
         
-        for i in range(1):
-           mujoco.mj_step(self.model, self.data)
-
-        data = self.get_sensor_data()
-        
-        obstacles = self.get_obstacles_simple()
-        
+        #extract car and world data
+        data = self.get_sensor_data()    
+        obstacles = self.get_obstacles_simple()        
         state = {'x' : data['car_pos'][0], 'y' : data['car_pos'][1], 'theta' : data['car_orientation']}
         
         return state, obstacles
