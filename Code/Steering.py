@@ -5,342 +5,330 @@ import time
 import itertools
 from collections.abc import Iterable
 
+# Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
 def rot(theta):
     return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 0.0]])
 
-class CircPath():
-    P_centre = np.zeros((3, 1))
-    P_origin = np.zeros((3, 1))
-    circle_vec = np.zeros((3, 1))
-    r = 0
+### Classes defining individual segments, which can be lines or arcs
 
-    def __init__(self, P_origin, theta, r, orient=1):
-        if P_origin.shape[0] == 2:
-            P_origin = np.hstack((P_origin, 0.0))
-        self.r = r
-        self.P_origin = P_origin
-        orient = np.sign(orient)
-        self.P_centre = orient * r * np.array([[0.0, -1.0, 0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]) @ np.array([np.cos(theta), np.sin(theta), 0]) + self.P_origin
-        self.circle_vec = orient * np.array([0.0, 0.0, -r])
+class Segment():
+    length = np.inf
+    curvature = 0
+    point_start = np.array([])
+    point_end = np.array([])
 
-    def print(self, ax, alpha=1.0):
-        circle = patches.Circle(self.P_centre, self.r, fill=False, alpha=alpha)
-        ax.add_patch(circle)
+    def __init__(self):
+        raise NotImplementedError()
 
-class Circ3Path():
-    def __init__(self, CPs, CPe, r, orient=1.0):
-        self.CP_s = CPs
-        self.CP_e = CPe
-        self.r = r
-        self.length = np.inf
+    def interpolate_single(self, b):
+        raise NotImplementedError()
 
-        self.d = CPe.P_centre - CPs.P_centre
-        self.m = (CPe.P_centre + CPs.P_centre) / 2
-        u_d = self.d / np.linalg.norm(self.d)
-
-        r4 = 2*r + CPe.r + CPs.r
-        self.r4 = r4
-        
-        # Start and end circles are too far appart
-        if np.linalg.norm(self.d) > r4:
-            return
-        
-        # Start and end circles should have the same polarity
-        if np.sign(CPs.circle_vec[2]) != np.sign(CPe.circle_vec[2]):
-            return
-
-        self.length = 0
-
-        self.circle_vec = -np.sign(CPs.circle_vec) * r
-
-        self.o = np.sqrt((r4) ** 2 - np.linalg.norm(self.d)**2) / 2 * (rot(np.deg2rad(90)*np.sign(self.circle_vec[2])) @ u_d)
-
-        self.P_centre = self.m + orient * self.o
-        self.P1 = (self.P_centre + CPs.P_centre) / 2
-        self.P2 = (self.P_centre + CPe.P_centre) / 2
-
-        self.r_P1 = self.P1 - self.P_centre
-        self.r_P2 = self.P2 - self.P_centre
-
-        self.ang_1 = np.arctan2(self.r_P1[1], self.r_P1[0])
-        self.ang_2 = np.arctan2(self.r_P2[1], self.r_P2[0])
-
-        if self.circle_vec[2] > 0:
-            self.ang_1, self.ang_2 = self.ang_2, self.ang_1
-
-        self.ang_1 %= 2 * np.pi
-        self.ang_2 %= 2 * np.pi
-
-        self.r_sP1 = self.P1 - self.CP_s.P_centre
-        self.r_eP2 = self.P2 - self.CP_e.P_centre
-
-        self.ang_s_2 = np.arctan2(self.r_sP1[1], self.r_sP1[0])
-        self.ang_e_1 = np.arctan2(self.r_eP2[1], self.r_eP2[0])
-
-        r_s = CPs.P_origin - CPs.P_centre
-        r_e = CPe.P_origin - CPe.P_centre
-        self.ang_s_1 = np.arctan2(r_s[1], r_s[0])
-        if self.CP_s.circle_vec[2] > 0:
-            self.ang_s_1, self.ang_s_2 = self.ang_s_2, self.ang_s_1
-
-        self.ang_s_1 %= 2 * np.pi
-        self.ang_s_2 %= 2 * np.pi
-
-        self.ang_e_2 = np.arctan2(r_e[1], r_e[0])
-        if self.CP_e.circle_vec[2] > 0:
-            self.ang_e_1, self.ang_e_2 = self.ang_e_2, self.ang_e_1
-
-        self.ang_e_1 %= 2 * np.pi
-        self.ang_e_2 %= 2 * np.pi
-
-        self.ang_s = np.sign(-self.CP_s.circle_vec[2]) * ((self.ang_s_2 - self.ang_s_1) % (2 * np.pi))
-        self.ang_m = np.sign(-self.circle_vec[2]) * ((self.ang_2 - self.ang_1) % (2 * np.pi))
-        self.ang_e = np.sign(-self.CP_e.circle_vec[2]) * ((self.ang_e_2 - self.ang_e_1) % (2 * np.pi))
-
-        self.dist = [np.abs(self.ang_s) * self.CP_s.r, np.abs(self.ang_m) * self.r, np.abs(self.ang_e) * self.CP_e.r]
-        self.curv = [-1 / self.CP_s.circle_vec[-1], -1 / self.circle_vec[-1], -1 / self.CP_e.circle_vec[-1]]
-
-        self.length = sum(self.dist)
-
-    def plot(self, ax, color='purple', linewidth=2, alpha=1.0, points=True):
-        if self.length < np.inf:
-            # circle = patches.Circle(self.m + self.o, self.r, fill=False)
-            # ax.add_patch(circle)
-            if points:
-                ax.scatter(self.P1[0], self.P1[1], color=color, alpha=alpha)
-                ax.scatter(self.P2[0], self.P2[1], color=color, alpha=alpha)
-            wedge = patches.Arc(self.P_centre[0:2], 2*self.r, 2*self.r, theta1=np.rad2deg(self.ang_1), theta2=np.rad2deg(self.ang_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
-            ax.add_patch(wedge)
-            wedge = patches.Arc(self.CP_s.P_centre[0:2], 2*self.CP_s.r, 2*self.CP_s.r, theta1=np.rad2deg(self.ang_s_1), theta2=np.rad2deg(self.ang_s_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
-            ax.add_patch(wedge)
-            wedge = patches.Arc(self.CP_e.P_centre[0:2], 2*self.CP_e.r, 2*self.CP_e.r, theta1=np.rad2deg(self.ang_e_1), theta2=np.rad2deg(self.ang_e_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
-            ax.add_patch(wedge)
-            
-            # print(f"length (ccc) = {self.length}")
-
-    def print(self):
-        print(f"distance = {self.dist[0]}, curve = {self.curv[0]}")
-        print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
-        print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
-        print(f"Total = {sum(self.dist)}")
-
-    def interpolate(self, a):
-        assert(a <= 1.0)
-        assert(a >= 0.0)
-        point = np.array([0, 0])
-        d = a * sum(self.dist)  # the distance along the total path
-        cumd = np.cumsum(self.dist) # cumulative distance traveled
-        if d < cumd[0]:
-            # interpolate first section
-            b = d / self.dist[0]  # the interpolation distance between point 0 and 1 (value: 0-1)
-            
-            if np.sign(self.curv[0]) < 0:
-                b = 1 - b
-            # print(f"0{b=}, {np.sign(self.curv[0])=}")
-            ang = b * ((self.ang_s_2 - self.ang_s_1) % (2*np.pi)) + self.ang_s_1  # angle of point in arc
-            delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
-            point = self.CP_s.P_centre[0:2] + delta
-            pass
-        else:
-            if d < cumd[1]:
-                # interpolate second section1
-                b = (d - cumd[0]) / self.dist[1]  # the interpolation distance between point 1 and 2 (value: 0-1)
-                
-                if np.sign(self.curv[1]) < 0:
-                    b = 1 - b
-                # print(f"1{b=}, {np.sign(self.curv[1])=}")
-            
-                
-                # print(f"{self.ang_1=}")
-                # print(f"{self.ang_2=}")
-                # b *= np.sign(self.curv[1])
-                
-                ang = b * ((self.ang_2 - self.ang_1) % (2*np.pi)) + self.ang_1  # angle of point in arc
-                delta = np.array([np.cos(ang), np.sin(ang)]) * self.r
-                point = self.P_centre[0:2] + delta
-                pass
-            else:
-                # interpolate last section
-                b = (d - cumd[1]) / self.dist[2]  # the interpolation distance between point 2 and 3 (value: 0-1)
-                if np.sign(self.curv[2]) < 0:
-                    b = 1 - b
-                # print(f"2{b=}, {np.sign(self.curv[2])=}")
-                # b *= np.sign(self.curv[2])
-                ang = b * ((self.ang_e_2 - self.ang_e_1) % (2*np.pi)) + self.ang_e_1  # angle of point in arc
-                delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
-                point = self.CP_e.P_centre[0:2] + delta
-                pass
-
-        return point
-
-    def interpolate_multi(self, aa):
+    def plot(self, ax, **kwargs):
+        raise NotImplementedError()
+    
+    def interpolate_multi(self, bb):
         out = []
-        for a in aa:
-            out.append(self.interpolate(a))
+        for b in bb:
+            out.append(self.interpolate_single(b))
         return np.array(out)
 
-    def interpolate_n(self, n=100):
-        return self.interpolate_multi(np.linspace(0.0, 1.0, n))
+    def interpolate(self, n=100):
+        self.interpolate(np.linspace(0.0, 1.0, n))
 
-    def plot_interpolate(self, ax):
-        points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
+class Line(Segment):
+    def __init__(self, s, e):
+        self.point_start = s
+        self.point_end = e
+        self.length = np.linalg.norm(self.point_end - self.point_start)
+        self.curvature = 0.0
+
+    def interpolate_single(self, b):
+        return self.point_start + b * (self.point_end - self.point_start)
+
+    def plot(self, ax, **kwargs):
+        ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
+
+class Arc(Segment):
+
+    # def __init__(self, origin, theta, radius):
+    #     if origin.shape[0] == 2:
+    #         origin = np.hstack((origin, 0.0))
+
+    #     self.point_start = origin
+
+    #     self.signed_radius = radius
+    #     self.radius = np.abs(radius)
+    #     self.curvature = 1/radius
+
+    #     self.point_centre = self.signed_radius * np.array([[0.0, -1.0, 0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]) @ np.array([np.cos(theta), np.sin(theta), 0]) + origin
+
+    #     self.radius_vector_origin = origin - self.point_centre
+    #     self.angle_start = np.arctan2(self.radius_vector_origin[1], self.radius_vector_origin[0])
+    #     self.angle_end = np.arctan2(self.radius_vector_origin[1], self.radius_vector_origin[0])
+
+    #     self.point_start = self.point_centre + self.radius_vector_origin
+    #     self.point_end = self.point_centre + self.radius_vector_origin
+
+    def __init__(self, centre, radius, radius_vector_start, radius_vector_end):
+        self.signed_radius = radius
+        self.radius = np.abs(radius)
+        self.curvature = 1/radius
+        self.point_centre = centre
+
+        self.radius_vector_start = radius_vector_start
+        self.radius_vector_end = radius_vector_end
+        self.point_start = self.point_centre + self.radius_vector_start
+        self.point_end = self.point_centre + self.radius_vector_end
+        self.update_angles()
+
+
+    def from_origin(origin, theta, radius):
+        if origin.shape[0] == 2:
+            origin = np.hstack((origin, 0.0))
+        point_centre = radius * np.array([[0.0, -1.0, 0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]) @ np.array([np.cos(theta), np.sin(theta), 0]) + origin
+        radius_vector_origin = origin - point_centre
+        arc = Arc(point_centre, radius, radius_vector_origin, radius_vector_origin)
+        arc.radius_vector_origin = radius_vector_origin
+        return arc
+        
+
+    def set_start(self, radius_vector_start):
+        self.radius_vector_start = radius_vector_start
+        self.update_angles()
+
+    def set_end(self, radius_vector_end):
+        self.radius_vector_end = radius_vector_end
+        self.update_angles()
+
+    def update_angles(self):
+        self.angle_end = np.arctan2(self.radius_vector_end[1], self.radius_vector_end[0])
+        self.point_end = self.point_centre + self.radius_vector_end
+        self.angle_start = np.arctan2(self.radius_vector_start[1], self.radius_vector_start[0])
+        self.point_start = self.point_centre + self.radius_vector_start
+
+        ang_s, ang_e = self.angle_start, self.angle_end
+        if self.signed_radius < 0:
+            ang_s, ang_e = ang_e, ang_s
+
+        self.angle = np.sign(-self.signed_radius) * (((ang_e  - ang_s)) % (2*np.pi))
+
+        self.length = np.abs(self.angle) * self.radius
+
+
+    def vector(self):
+        return np.array([0.0, 0.0, self.signed_radius])
+
+    def interpolate_single(self, b):
+
+        if np.sign(self.signed_radius) < 0:
+            b = 1 - b
+
+        b *= np.sign(-self.signed_radius)
+        ang_s, ang_e = self.angle_start, self.angle_end
+        if self.signed_radius < 0:
+            ang_s, ang_e = ang_e, ang_s
+        ang = b * self.angle + ang_s  # angle of point in arc
+        delta = np.array([np.cos(ang), np.sin(ang)]) * self.radius
+        point = self.point_centre[0:2] + delta
+        return point
+
+    def plot(self, ax, **kwargs):
+        kwargs = {(key if key != 'color' else 'ec'): value for key, value in kwargs.items()}
+        ang_s, ang_e = self.angle_start, self.angle_end
+        if self.signed_radius < 0:
+            ang_s, ang_e = ang_e, ang_s
+        ax.add_patch(patches.Arc(self.point_centre[0:2],
+                                    2*self.radius, 2*self.radius,
+                                    theta1=np.rad2deg(ang_s),
+                                    theta2=np.rad2deg(ang_e), fill=False, **kwargs))
+
+
+### Classes defining a path, which is just a collection of segments
+
+class Path():
+    def __init__(self):
+        self.length = 0
+        # print("Path.__init__()")
+        for segment in self.segments:
+            self.length += segment.length
+
+    def print(self):
+        if len(self.segments) == 0:
+            print("Empty Path")
+        else:
+            for segment in self.segments:
+                print(f"distance = {segment.length:.04}, curve = {segment.curvature:.04}")
+            print(f"Total = {self.length}")
+
+    def plot(self, ax, **kwargs):
+        for segment in self.segments:
+            segment.plot(ax, **kwargs)
+
+    def plot_interpolate(self, ax, n=100, d=None):
+        points = self.interpolate(n, d)
         ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
+    def interpolate_single(self, a):
+        assert(a <= 1.0)
+        assert(a >= 0.0)
+        d = a * self.length  # the distance along the total path
+        d_cumulative = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
+        d_cumulative_padded = np.hstack((0.0, d_cumulative))
+        for i, (segment, d_c, d_cp) in enumerate(zip(self.segments, d_cumulative, d_cumulative_padded)):
+            if d <= d_c:
+                b = (d-d_cp) / segment.length
+                return segment.interpolate_single(b)
+        return None
 
+    def interpolate_multi(self, aa):
+        points = []
+        for a in aa:
+            points.append(self.interpolate_single(a)[0:2])
+        return np.array(points)
 
-class FullPath():
-    def __init__(self, CPs, CPe):
-        self.CP_s = CPs
-        self.CP_e = CPe
+    def interpolate(self, n=100, d=None):
+        if d is not None:
+            n = (int) (np.round(self.length / d) + 1)
+        return self.interpolate_multi(np.linspace(0.0, 1.0, n))
+    
+    def interpolate_angles(self, n=100, d=None, fdt=0.0001):
+        if d is not None:
+            n = (int) (np.round(self.length / d) + 1)
+        dt = fdt * self.length / (n - 1)
+        aa = np.linspace(0.0, 1.0-dt, n)
+        bb = aa + dt
+        points_a = self.interpolate_multi(aa)
+        points_b = self.interpolate_multi(bb)
+        diff = points_b - points_a
+        mid = (points_a + points_b) / 2
+        angles = np.arctan2(diff[:,1], diff[:,0])
+        return (mid, angles)
 
-        d = CPe.P_centre - CPs.P_centre
-        u_d = d / np.linalg.norm(d)
-        if np.sign(CPs.circle_vec[2]) != np.sign(CPe.circle_vec[2]):
-            if (CPs.r + CPe.r) < np.linalg.norm(d):
-                alpha = np.arcsin((CPs.r + CPe.r)/np.linalg.norm(d)) * np.sign(-CPs.circle_vec[2])
+class PathTST(Path):
+    def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
+        arc_start = Arc.from_origin(point_start, angle_start, radius_start)
+        arc_end =   Arc.from_origin(point_end, angle_end, radius_end)
+
+        d = arc_end.point_centre - arc_start.point_centre
+        norm_d = np.linalg.norm(d)
+        u_d = d / norm_d
+
+        if np.sign(arc_start.signed_radius) != np.sign(arc_end.signed_radius):
+            if (arc_start.radius + arc_end.radius) < np.linalg.norm(d):
+                alpha = np.arcsin((arc_start.radius + arc_end.radius) / norm_d) * np.sign(arc_start.signed_radius)
             else:
                 self.length = np.inf
                 return
         else:
             alpha = 0
-        r_st = rot(alpha) @ np.cross(CPs.circle_vec, u_d)
-        r_et = rot(alpha) @ np.cross(CPe.circle_vec, u_d)
-        r_s = CPs.P_origin - CPs.P_centre
-        r_e = CPe.P_origin - CPe.P_centre
-        ang_s_1 = np.arctan2(r_s[1], r_s[0])
-        ang_s_2 = np.arctan2(r_st[1], r_st[0])
-        if CPs.circle_vec[2] > 0:
-            ang_s_1, ang_s_2 = ang_s_2, ang_s_1
-        ang_e_1 = np.arctan2(r_e[1], r_e[0])
-        ang_e_2 = np.arctan2(r_et[1], r_et[0])
-        if CPe.circle_vec[2] < 0:
-            ang_e_1, ang_e_2 = ang_e_2, ang_e_1
-        ang_s = np.sign(-CPs.circle_vec[2]) * ((ang_s_2 - ang_s_1) % (2 * np.pi))
-        ang_e = np.sign(-CPe.circle_vec[2]) * ((ang_e_2 - ang_e_1) % (2 * np.pi))
 
-        self.P1 = CPs.P_centre + r_st
-        self.P2 = CPe.P_centre + r_et
+        r_st = rot(alpha) @ np.cross(u_d, arc_start.vector())
+        r_et = rot(alpha) @ np.cross(u_d, arc_end.vector())
 
-        self.dist = [np.abs(ang_s) * CPs.r, np.linalg.norm(self.P1 - self.P2), np.abs(ang_e) * CPe.r]
-        self.curv = [-1 / CPs.circle_vec[-1], 0, -1 / CPe.circle_vec[-1]]
+        arc_start.set_end(r_st)
+        arc_end.set_start(r_et)
 
-        self.length = sum(self.dist)
+        self.segments = []
+        self.segments.append(arc_start)
+        self.segments.append(Line(arc_start.point_end, arc_end.point_start))
+        self.segments.append(arc_end)
 
-        self.ang_s = ang_s
-        self.ang_e = ang_e
+        super().__init__()
 
-        self.ang_s_1 = ang_s_1
-        self.ang_s_2 = ang_s_2
-        self.ang_e_1 = ang_e_1
-        self.ang_e_2 = ang_e_2
+    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end):
+        opt = None
+        opt_len = np.inf
+        for sign_s in [-1, 1]:
+            for sign_e in [-1, 1]:
+                path = PathTST(point_start, angle_start, sign_s * radius_start, point_end, angle_end, sign_e * radius_end)
+                if opt_len > path.length:
+                    opt = path
+                    opt_len = opt.length
+        return opt
 
+class PathTTT(Path):
+    def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle):
+        arc_start = Arc.from_origin(point_start, angle_start, radius_start)
+        arc_end =   Arc.from_origin(point_end, angle_end, radius_end)
+
+        self.d = arc_end.point_centre - arc_start.point_centre
+        self.m = (arc_end.point_centre + arc_start.point_centre) / 2
+        norm_d = np.linalg.norm(self.d)
+        u_d = self.d / norm_d
+
+        self.r4 = 2*np.abs(radius_middle) + arc_start.radius + arc_end.radius
+
+        self.length = np.inf
         
-
-    def plot(self, ax, color='orange', linewidth=1.5, alpha=1.0, points=True):
-        if self.length != np.inf:
-            if points:
-                ax.scatter(self.P1[0], self.P1[1], color=color, alpha=alpha)
-                ax.scatter(self.P2[0], self.P2[1], color=color, alpha=alpha)
-            ax.plot([self.P1[0], self.P2[0]], [self.P1[1], self.P2[1]], linewidth=linewidth, color=color, alpha=alpha)
-            wedge = patches.Arc(self.CP_s.P_centre[0:2], 2*self.CP_s.r, 2*self.CP_s.r, theta1=np.rad2deg(self.ang_s_1), theta2=np.rad2deg(self.ang_s_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
-            ax.add_patch(wedge)
-            wedge = patches.Arc(self.CP_e.P_centre[0:2], 2*self.CP_e.r, 2*self.CP_e.r, theta1=np.rad2deg(self.ang_e_1), theta2=np.rad2deg(self.ang_e_2), ec=color, linewidth=linewidth, fill=False, alpha=alpha)
-            ax.add_patch(wedge)
-            # print(f"length (csc) = {self.length}")
-
-    def print(self):
-        print(f"distance = {self.dist[0]}, curve = {self.curv[0]}")
-        print(f"distance = {self.dist[1]}, curve = {self.curv[1]}")
-        print(f"distance = {self.dist[2]}, curve = {self.curv[2]}")
-        print(f"Total = {sum(self.dist)}")
-
-    def interpolate(self, a):
-        assert(a <= 1.0)
-        assert(a >= 0.0)
-        point = np.array([0, 0])
-        d = a * sum(self.dist)  # the distance along the total path
-        cumd = np.cumsum(self.dist) # cumulative distance traveled
-        if d < cumd[0]:
-            # interpolate first section
-            b = d / self.dist[0]  # the interpolation distance between point 0 and 1 (value: 0-1)
-            if np.sign(self.curv[0]) < 0:
-                b = 1 - b
-            ang = b * ((self.ang_s_2 - self.ang_s_1) % (2*np.pi)) + self.ang_s_1  # angle of point in arc
-            delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
-            point = self.CP_s.P_centre[0:2] + delta
-            pass
-        else:
-            if d < cumd[1]:
-                # interpolate second section1
-                b = (d - cumd[0]) / self.dist[1]  # the interpolation distance between point 1 and 2 (value: 0-1)
-                if np.sign(self.curv[1]) < 0:
-                    b = 1 - b
-                point = self.P1 + (self.P2 - self.P1) * b
-                point = point[0:2]
-                pass
-            else:
-                # interpolate last section
-                b = (d - cumd[1]) / self.dist[2]  # the interpolation distance between point 2 and 3 (value: 0-1)
-                if np.sign(self.curv[2]) < 0:
-                    b = 1 - b
-                ang = b * ((self.ang_e_2 - self.ang_e_1) % (2*np.pi)) + self.ang_e_1  # angle of point in arc
-                delta = np.array([np.cos(ang), np.sin(ang)]) * self.CP_s.r
-                point = self.CP_e.P_centre[0:2] + delta
-                pass
-
-        return point
-
-    def interpolate_multi(self, aa):
-        out = []
-        for a in aa:
-            out.append(self.interpolate(a))
-        return np.array(out)
-
-    def interpolate_n(self, n=100):
-        return self.interpolate_multi(np.linspace(0.0, 1.0, n))
-
-
-    def plot_interpolate(self, ax):
-        points = self.interpolate_multi(np.linspace(0.0, 1.0, 25))
-        print(f"{points=}")
-        ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-
-
-
-def optimal_path(P_s, theta_s, P_e, theta_e, radii):
-    if P_s.shape[0] == 2:
-        P_s = np.hstack((P_s, 0.0))
-    if P_e.shape[0] == 2:
-        P_e = np.hstack((P_e, 0.0))
-    FP_opt = None
-    length_min = np.inf
-    
-    if not isinstance(radii, Iterable):
-        radii = [radii]
-    for r in radii:
-
-        CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
-        CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
+        # Start and end circles are too far appart
+        if norm_d > self.r4:
+            return
         
-        for CP_s, CP_e in itertools.product(CP_ss, CP_es):
-            FP = FullPath(CP_s, CP_e)
-            if FP.length < length_min:
-                FP_opt = FP
-                length_min = FP_opt.length
-            C3P1 = Circ3Path(CP_s, CP_e, r, orient=-1)
-            if C3P1.length < length_min:
-                FP_opt = C3P1
-                length_min = FP_opt.length
-            C3P2 = Circ3Path(CP_s, CP_e, r, orient=+1)
-            if C3P2.length < length_min:
-                FP_opt = C3P2
-                length_min = FP_opt.length
+        # Start and end circles should have the same polarity
+        if np.sign(arc_start.signed_radius) != np.sign(arc_end.signed_radius):
+            return
 
-    return FP_opt
+        self.length = 0
 
-def plot_point(ax, P, theta, color, length=0.1, label=None):
+        signed_radius = -np.abs(radius_middle) * np.sign(arc_start.signed_radius)
+
+        self.o = np.sqrt(self.r4** 2 - norm_d**2) / 2 * (rot(np.deg2rad(90)*np.sign(signed_radius)) @ u_d)
+
+        middle_point_centre = self.m + np.sign(radius_middle) * self.o
+        self.P1 = (middle_point_centre + arc_start.point_centre) / 2
+        self.P2 = (middle_point_centre + arc_end.point_centre) / 2
+
+        self.r_P1 = self.P1 - middle_point_centre
+        self.r_P2 = self.P2 - middle_point_centre
+
+        arc_start.set_end(-self.r_P1)
+        arc_end.set_start(-self.r_P2)
+
+        arc_middle = Arc(middle_point_centre, signed_radius, self.r_P1, self.r_P2)
+
+        self.segments = []
+        self.segments.append(arc_start)
+        self.segments.append(arc_middle)
+        self.segments.append(arc_end)
+
+        super().__init__()
+
+
+    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle):
+        opt = None
+        opt_len = np.inf
+        assert(np.sign(radius_start) == np.sign(radius_end))
+        for sign_s in [-1, 1]:
+            for sign_m in [-1, 1]:
+                path = PathTTT(point_start, angle_start, sign_s * radius_start, point_end, angle_end, sign_s * radius_end, sign_m * radius_middle)
+                if opt_len > path.length:
+                    opt = path
+                    opt_len = opt.length
+        return opt
+
+
+
+# Function that generates the shortest path from start to end with a specified turning radius
+# Returns a Path object
+def optimal_path(P_s, theta_s, P_e, theta_e, radius) -> Path:
+    path1 = PathTTT.optimal(P_s, theta_s, radius, P_e, theta_e, radius, radius)
+    path2 = PathTST.optimal(P_s, theta_s, radius, P_e, theta_e, radius)
+    opt_len = np.inf
+    opt = None
+    for path in [path1, path2]:
+        if path is not None:
+            if path.length < opt_len:
+                opt = path
+                opt_len = opt.length
+    return opt
+
+# Helper function to plot a point with a direction
+def plot_point(ax, P, theta, color="blue", length=0.1, label=None):
     ax.scatter(P[0], P[1], color=color)
     ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3, label=label)
+
+
+### Some main functions for testing
 
 def main():
     P_s = np.array([0, 0])
@@ -355,52 +343,50 @@ def main():
     plot_point(ax, P_s, theta_s, 'green')
     plot_point(ax, P_e, theta_e, 'blue')
 
-    # FP_opt = None
-    # length_min = np.inf
-    # for r in [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]:
-
-    #     CP_ss = [CircPath(P_s, theta_s, r, +1), CircPath(P_s, theta_s, r, -1)]
-    #     CP_es = [CircPath(P_e, theta_e, r, +1), CircPath(P_e, theta_e, r, -1)]
-
-    #     # CP_ss = [CircPath(P_s, theta_s, r, +1)]
-    #     # CP_es = [CircPath(P_e, theta_e, r, +1)]
-
-    #     # CP_ss = [CircPath(P_s, theta_s, r, -1)]
-    #     # CP_es = [CircPath(P_e, theta_e, r, -1)]
-
-    #     # for CP in CP_ss + CP_es:
-    #     #     CP.print(ax, alpha=0.0)
-        
-    #     for CP_s, CP_e in itertools.product(CP_ss, CP_es):
-    #         FP = FullPath(CP_s, CP_e)
-    #         C3P1 = Circ3Path(CP_s, CP_e, r, orient=-1)
-    #         C3P2 = Circ3Path(CP_s, CP_e, r, orient=1)
-
-    #         FP.plot(ax, alpha=0.2)
-    #         C3P1.plot(ax, alpha=0.1)
-    #         C3P2.plot(ax, alpha=0.1)
-
-    #         if FP.length < length_min:
-    #             FP_opt = FP
-    #             length_min = FP_opt.length
-    #         if C3P1.length < length_min:
-    #             FP_opt = C3P1
-    #             length_min = FP_opt.length
-    #         if C3P2.length < length_min:
-    #             FP_opt = C3P2
-    #             length_min = FP_opt.length
-
-    # FP_opt.plot(ax, color="red", linewidth=3, alpha=0.8)
-    # FP_opt.print()
-
-    # print(f"Shortest path = {FP_opt.length}")
-    op = optimal_path(P_s, theta_s, P_e, theta_e, [1.5, 1.4, 1.3, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6])
+    op = optimal_path(P_s, theta_s, P_e, theta_e, 0.6)
     op.print()
 
-    op.plot(ax, color="red", linewidth=3, alpha=0.8, points=False)
-    op.plot_interpolate(ax)
+    op.plot_interpolate(ax, n=5)
+    op.plot(ax, color="red", linewidth=3, alpha=0.8)
 
+    plt.ylim(-5, 5)
+    plt.xlim(-5, 5)
+    plt.grid()
+    plt.axis("equal")
+    plt.show()
 
+def main2():
+    l = Line(np.array([0.0, 0.2]), np.array([1.0, -0.5]))
+    p = l.interpolate_multi([0.0, 0.5, 1.0])
+    print(f"{p=}")
+
+def main3():
+    P_s = np.array([0, 0])
+    theta_s = np.deg2rad(90)
+
+    P_e = np.array([0.2, 0.2])
+    theta_e = np.deg2rad(90)
+
+    plt.figure()
+    ax = plt.gca()
+
+    plot_point(ax, P_s, theta_s, 'green')
+    plot_point(ax, P_e, theta_e, 'blue')
+
+    path = optimal_path(P_s, theta_s, P_e, theta_e, 0.2)
+    # path.plot_interpolate(ax, d=0.1)
+    points, angles = path.interpolate_angles(30)
+    print(f"{points=}")
+    print(f"{angles=}")
+    for p, a in zip(points, angles):
+        plot_point(ax, p, a, length=0.02)
+    path.print()
+    path.plot(ax, color="red", linewidth=1, alpha=0.5)
+
+    print(f"{points[0,:]} == {P_s}")
+    print(f"{points[-1,:]} == {P_e}")
+    print(f"{angles[0]} == {theta_s}")
+    print(f"{angles[-1]} == {theta_e}")
 
     plt.ylim(-5, 5)
     plt.xlim(-5, 5)
@@ -410,4 +396,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main3()
