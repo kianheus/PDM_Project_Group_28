@@ -2,20 +2,26 @@
 
 import Steering as steer
 import numpy as np
+import time
 
+n = 10000
+t_s = time.time()
+
+# for i in range(n):
 # define a starting point
-point_start = np.array([0.0, 3.0])
-angle_start = np.deg2rad(20)
+point_start = np.array([0.0, 3.0, np.deg2rad(20)])
 
 # define a ending point
-point_end = np.array([1.0, 0.8])
-angle_end = np.deg2rad(-70)
+point_end = np.array([1.0, 0.8, np.deg2rad(-70)])
 
 # define a minimum turning radius (can also be a list of multiple angles)
 radius_min = 0.5
 
 # calculate the shortest points
-shortest_path = steer.optimal_path(point_start, angle_start, point_end, angle_end, radius_min)
+shortest_path = steer.optimal_path(point_start, point_end, radius_min)
+
+t_e = time.time()
+print(f"time = {(t_e-t_s)}")
 
 # extract a list of points (n evenly spaced points)
 points_n = shortest_path.interpolate(n=10)
