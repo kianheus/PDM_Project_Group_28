@@ -6,15 +6,16 @@ from scipy.spatial.transform import Rotation as R
 
 class Car(core.Env):
 
-    def __init__(self):
+    def __init__(self, render = True):
 
 
 
         self.model = mujoco.MjModel.from_xml_path('../mujoco/models/hospital.xml')
 
         self.data = mujoco.MjData(self.model)
-
-        self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
+        
+        if render == True:   
+            self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
 
 
     def reset(self):
