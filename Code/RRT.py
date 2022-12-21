@@ -11,7 +11,11 @@ from tqdm import tqdm
 
 user = "Kian"
 
+import sys
+sys.path.append("../mujoco")
+
 import carenv
+
 env = carenv.Car(render=False)
 state, obstacles = env.reset() #start with reset
 obstacles[:,3:] = obstacles[:,3:]*2 
@@ -19,7 +23,7 @@ obstacles[:,3:] = obstacles[:,3:]*2
 start_time = time.time()
 class RRTCalc:
 
-    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, n_line_segments = 100):
+    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, vehicle_radius, n_line_segments = 100):
         self.graph_coords = np.array([[start_x, start_y, start_theta]])
         self.graph_parent_idx = np.array([0])
         self.n_line_segments = n_line_segments
@@ -28,6 +32,7 @@ class RRTCalc:
         self.collision_resolution = collision_resolution
         self.radius = radius
         self.steering_paths = []
+        self.vehicle_radius = vehicle_radius
 
 
     def new_point(self):
@@ -71,8 +76,8 @@ class RRTCalc:
 
     def collision_check(self, point):
         for obstacle in self.obstacles:
-            if point[0] > obstacle[0] - obstacle[3]/2 and point[0] < obstacle[0] + obstacle[3]/2\
-                and point[1] > obstacle[1] - obstacle[4]/2 and point[1] < obstacle[1] + obstacle[4]/2:
+            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
                 return(True)
                 break
         return(False)
@@ -186,7 +191,7 @@ goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x
 n_line_segments = 100
 
 # [x, y, rotation, length, width]
-obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
+# obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
 radius = 0.5
 collision_resolution = 0.05
 
@@ -214,8 +219,8 @@ if user == "Paula":
                     exit()
 
 if user == "Kian":
-    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius)
-    for i in tqdm(range(300)): #range(200): #
+    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius, vehicle_radius=0.1)
+    for i in tqdm(range(1000)): #range(200): #
         RRT_calculator.new_point()
 
 
@@ -229,7 +234,7 @@ if user == "Kian":
 
     fig, ax = plt.subplots()
     for path in RRT_calculator.steering_paths:
-        path.plot(ax, color="blue")
+        path.plot(ax, color="red", linewidth=1, alpha=0.8)
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
     plt.axis("equal")
