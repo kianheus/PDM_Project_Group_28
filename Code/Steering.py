@@ -6,7 +6,7 @@ import itertools
 from collections.abc import Iterable
 
 # Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
-def rot(theta):
+def rot(theta) -> np.ndarray:
     return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 0.0]])
 
 ### Classes defining individual segments, which can be lines or arcs
@@ -49,25 +49,6 @@ class Line(Segment):
         ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
 
 class Arc(Segment):
-
-    # def __init__(self, origin, theta, radius):
-    #     if origin.shape[0] == 2:
-    #         origin = np.hstack((origin, 0.0))
-
-    #     self.point_start = origin
-
-    #     self.signed_radius = radius
-    #     self.radius = np.abs(radius)
-    #     self.curvature = 1/radius
-
-    #     self.point_centre = self.signed_radius * np.array([[0.0, -1.0, 0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]) @ np.array([np.cos(theta), np.sin(theta), 0]) + origin
-
-    #     self.radius_vector_origin = origin - self.point_centre
-    #     self.angle_start = np.arctan2(self.radius_vector_origin[1], self.radius_vector_origin[0])
-    #     self.angle_end = np.arctan2(self.radius_vector_origin[1], self.radius_vector_origin[0])
-
-    #     self.point_start = self.point_centre + self.radius_vector_origin
-    #     self.point_end = self.point_centre + self.radius_vector_origin
 
     def __init__(self, centre, radius, radius_vector_start, radius_vector_end):
         self.signed_radius = radius
@@ -115,7 +96,7 @@ class Arc(Segment):
         self.length = np.abs(self.angle) * self.radius
 
 
-    def vector(self):
+    def vector(self) -> np.ndarray:
         return np.array([0.0, 0.0, self.signed_radius])
 
     def interpolate_single(self, b):
@@ -206,12 +187,12 @@ class Path():
 
 class PathTST(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
-        arc_start = Arc.from_origin(point_start, angle_start, radius_start)
-        arc_end =   Arc.from_origin(point_end, angle_end, radius_end)
+        arc_start : Arc = Arc.from_origin(point_start, angle_start, radius_start)
+        arc_end : Arc =   Arc.from_origin(point_end, angle_end, radius_end)
 
         d = arc_end.point_centre - arc_start.point_centre
-        norm_d = np.linalg.norm(d)
-        u_d = d / norm_d
+        norm_d : float = np.linalg.norm(d)
+        u_d : np.ndarray = d / norm_d
 
         if np.sign(arc_start.signed_radius) != np.sign(arc_end.signed_radius):
             if (arc_start.radius + arc_end.radius) < np.linalg.norm(d):
@@ -235,7 +216,7 @@ class PathTST(Path):
 
         super().__init__()
 
-    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end):
+    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end) -> Path:
         opt = None
         opt_len = np.inf
         for sign_s in [-1, 1]:
@@ -294,7 +275,7 @@ class PathTTT(Path):
         super().__init__()
 
 
-    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle):
+    def optimal(point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle) -> Path:
         opt = None
         opt_len = np.inf
         assert(np.sign(radius_start) == np.sign(radius_end))
@@ -310,7 +291,11 @@ class PathTTT(Path):
 
 # Function that generates the shortest path from start to end with a specified turning radius
 # Returns a Path object
-def optimal_path(P_s, theta_s, P_e, theta_e, radius) -> Path:
+def optimal_path(point_start, point_end, radius) -> Path:
+    P_s = np.squeeze(point_start)[:2]
+    theta_s = np.squeeze(point_start)[2]
+    P_e = np.squeeze(point_end)[:2]
+    theta_e = np.squeeze(point_end)[2]
     path1 = PathTTT.optimal(P_s, theta_s, radius, P_e, theta_e, radius, radius)
     path2 = PathTST.optimal(P_s, theta_s, radius, P_e, theta_e, radius)
     opt_len = np.inf
