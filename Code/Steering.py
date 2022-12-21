@@ -174,7 +174,7 @@ class Path():
     
     def interpolate_angles(self, n=100, d=None, fdt=0.0001):
         if d is not None:
-            n = (int) (np.round(self.length / d) + 1)
+            n = (int) (np.ceil(self.length / d) + 1)
         dt = fdt * self.length / (n - 1)
         aa = np.linspace(0.0, 1.0-dt, n)
         bb = aa + dt
