@@ -17,6 +17,7 @@ import carenv
 
 env = carenv.Car()
 state, obstacles = env.reset() #start with reset
+obstacles[:,3:] = obstacles[:,3:]*2 
 
 #import carsim
 
@@ -170,8 +171,8 @@ class RRTPlot():
 # Define some sets of cooridnates
 workspace_center = np.array([0, 0]) # Coordinate center of workspace
 workspace_size = np.array([30, 30]) # Dimensions of workspace
-start_coord = np.array([-2, -2, 0]) # Starting position and orientation of robots (x, y, theta)
-goal_coord = np.array([3, 3, 0]) # Goal position and orientation of robot (x, y, theta)
+start_coord = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
+goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
 
 #Computational variables
 n_line_segments = 100
