@@ -9,7 +9,7 @@ from matplotlib import patches
 import Steering as steer
 from tqdm import tqdm, trange
 
-user = "thomas"
+user = "thomas2"
 
 import sys
 sys.path.append("../mujoco")
@@ -352,3 +352,101 @@ if user == "thomas":
 
     
     plt.show()
+
+
+if user == "thomas2":
+    print("aarg")
+    env_map = Map(obstacles, 0.1)
+
+    shape = (31, 31, 31)
+
+    xx = np.linspace(-10, 10, shape[0])
+    yy = np.linspace(-10, 10, shape[1])
+    tt = np.linspace(0, 360, shape[2])
+
+    z = np.zeros(shape)
+
+    for x in trange(len(xx)):
+        for y in range(len(yy)):
+            for t in range(len(tt)):
+                path = steer.optimal_path(pose_deg(0, 0, 0), pose_deg(xx[x], yy[y], tt[t]), 1.0)
+                z[x,y,t] = path.length if path is not None else 0.0
+
+    # zz = [steer.optimal_path(pose_deg(0, 0, 0), pose_deg(i, j, k), 1.0) for k in tqdm(t) for j in y for i in x]
+    # z = np.array([path.length if path is not None else 0.0 for path in zz])
+
+    X, Y = np.meshgrid(xx, yy)
+    # Z = z.reshape(21, 21, 21)
+
+    print(f"{X.shape=}")
+    print(f"{Y.shape=}")
+    print(f"{z.shape=}")
+
+    fig, axs = plt.subplots(1, 1)
+
+    c = axs.pcolor(X, Y, z[:,:,0].T)
+    fig.colorbar(c, ax=axs)
+    # plt.axes("equal")
+
+    err = []
+    errx = []
+
+    for _ in range(10):
+        pose = env_map.random_pose()
+        length = steer.optimal_path(pose_deg(0, 0, 0), pose, 1.0).length
+
+        
+        x_index_1 = np.argmax((np.array(xx)-pose[0]) > 0)
+        x_index_0 = x_index_1 - 1
+
+        y_index_1 = np.argmax((np.array(yy)-pose[1]) > 0)
+        y_index_0 = y_index_1 - 1
+
+        t_index_1 = np.argmax((np.deg2rad(np.array(tt))-pose[2]) > 0)
+        t_index_0 = t_index_1 - 1
+        
+        # print(f"{diff_x > 0}")
+        # print(f"{diff_x < 0}")
+
+        val_max = -np.inf
+        for x_index in [x_index_0, x_index_1]:
+            for y_index in [y_index_0, y_index_1]:
+                for t_index in [t_index_0, t_index_1]:
+                    val = z[x_index, y_index, t_index]
+                    if val > val_max:
+                        val_max = val
+                    # print(f"{val=}")
+
+        # print(f"upper bound =  {val_max}")
+        # print(f"upper bound =  {np.linalg.norm(pose[:2]) + 7*np.pi/3 * turning_radius}")
+        # print(f"actual value = {length}")
+
+        err.append(val_max - length)
+        errx.append(np.linalg.norm(pose[:2]) + 7*np.pi/3 * turning_radius - length)
+        
+        print(f"{pose=}: {length=}, {val_max=}")
+        
+
+        # print(f"{xx[x_index]}, {yy[y_index]}, {tt[t_index]}")
+        # print(f"{xx[x_index]}, {yy[y_index]}, {tt[t_index]}")
+        # print(f"x is in: ({xx[x_index_0]}, {xx[x_index_1]})")
+        # print(f"y is in: ({yy[y_index_0]}, {yy[y_index_1]})")
+        # print(f"t is in: ({tt[t_index_0]}, {tt[t_index_1]})")
+
+    print(f"{err=}")
+    print(f"{errx=}")
+
+
+
+    
+
+
+
+    # plt.show()
+
+    # plt.imshow(Z,origin='lower',interpolation='bilinear')
+
+    # for m in mg.T:
+    #     # print(f"{m=}")
+    #     for g in m:
+    #         print(f"{g=}")
