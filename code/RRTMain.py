@@ -42,7 +42,7 @@ def main():
     goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
     
     #Computational variables
-    radius = 0.5
+    radius = 1.2
     collision_resolution = 0.05
     
     # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
