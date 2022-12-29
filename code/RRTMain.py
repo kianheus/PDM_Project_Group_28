@@ -52,32 +52,37 @@ def main():
     
 # Kian, Thomas
 def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collision_resolution):
+
+    # Set up a environment map object (used for collisions and random point generation)
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
+    # Define start and end poses
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(5.0, 3.0, -90)
+    final_pose = RRT.pose_deg(2.5, 5.0, 180)
 
+    # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
     
+    # Grow the tree to the final pose
     done = tree.grow_to(final_pose, trange(2000), 180)
 
     fig, ax = plt.subplots()
-    env_map.plot(ax)
+    env_map.plot(ax)    # plot the environment (obstacles)
 
+    # plot the edges of the tree
     for edge in tree.edges:
-        # print("edge")
         edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
-
+    # backtrack the tree to generate a path and a list of points
     points = np.array([[0.0, 0.0, 0.0]])
     if done:
         path = tree.path_to(final_pose)
         path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
         path.print()
-        points = path.interpolate_angles_2(d=0.05)
+        points = path.interpolate_poses(d=0.05)
         plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
         
-
+    # plot the start and endpoints
     steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
     steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
 

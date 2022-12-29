@@ -133,6 +133,13 @@ class Tree():
     def grow_single(self):
         return self.add_path_to(self.map.random_pose())
 
+
+    '''
+    Grow the path until a valid path to the end_pose is found.
+    Iteration is controlled using the iter parameter. By passing a trange(n), a loading bar is shown
+    Iteration is cut off after some amount of seconds to prevent runnaway.
+    The function returns true if a path has been found.
+    '''
     def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180):
         close_time=time.time() + max_seconds
         added_node = True
@@ -149,6 +156,11 @@ class Tree():
             added_node = self.grow_single()
         return done
 
+    '''
+    Finds a path from the origin to the given end pose.
+    This function returns none if the given end pose is not a node in the tree.
+    If a path exists, a steer.Path object is returned going from the origin to the end pose
+    '''
     def path_to(self, end_pose):
         segments = []
         node = self.get_node(end_pose)
@@ -166,6 +178,11 @@ class Tree():
         path = steer.Path(segments)
         return path
     
+    '''
+    Tries to match the given pose to a node in the tree.
+    Due to floating point errors, a tolerance value must be used.
+    Returns None if no matching node exists.
+    '''
     def get_node(self, pose):
         offset = self.node_poses - pose
         offset[:,2] += np.pi
@@ -174,13 +191,17 @@ class Tree():
         offset[:,2] /= 10
         distances = np.linalg.norm(offset, axis=1)
         idx_closest = np.argmin(distances)
-        if distances[idx_closest] > 1e-3:
+        if distances[idx_closest] > 2e-3:
             print(f"No matching node found. Closest node at {distances[idx_closest]}.")
             print(f"{distances=}")
             print(f"{offset=}")
             return None
         return self.nodes[idx_closest]
 
+
+    '''
+    Tries to connect a new_pose to the newest node in the tree
+    '''
     def connect_to_newest_node(self, new_pose : np.ndarray):
         path = steer.optimal_path(self.node_poses[-1], new_pose, self.turning_radius)
         discrete_path = path.interpolate(d=self.collision_resolution)
