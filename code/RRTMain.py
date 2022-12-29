@@ -77,42 +77,42 @@ def main():
                         pygame.quit()
                         exit()
     
-    if user == "Kian":
-        RRT_calculator = RRTCalc(start_coord[0],
-                                 start_coord[1],
-                                 start_coord[2],
-                                 obstacles,
-                                 collision_resolution,
-                                 radius,
-                                 workspace_center, 
-                                 workspace_size,
-                                 vehicle_radius=0.1)
+    # if user == "Kian":
+    #     RRT_calculator = RRTCalc(start_coord[0],
+    #                              start_coord[1],
+    #                              start_coord[2],
+    #                              obstacles,
+    #                              collision_resolution,
+    #                              radius,
+    #                              workspace_center, 
+    #                              workspace_size,
+    #                              vehicle_radius=0.1)
         
-        for i in tqdm(range(30)): #range(200): #
-            RRT_calculator.new_point()
+    #     for i in tqdm(range(30)): #range(200): #
+    #         RRT_calculator.new_point()
     
     
-        """
-        lines = []
-        for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent_idx)):
-            line = [RRT_calculator.graph_coords[i,:2], (RRT_calculator.graph_coords[parent,:2])]
-            lines.append(line)
-        lc = mc.LineCollection(lines, linewidths=2)#, colors = RRT_calculator.colours)
-        """
+    #     """
+    #     lines = []
+    #     for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent_idx)):
+    #         line = [RRT_calculator.graph_coords[i,:2], (RRT_calculator.graph_coords[parent,:2])]
+    #         lines.append(line)
+    #     lc = mc.LineCollection(lines, linewidths=2)#, colors = RRT_calculator.colours)
+    #     """
     
-        fig, ax = plt.subplots()
-        for path in RRT_calculator.steering_paths:
-            path.plot(ax, endpoint=True, color="red", linewidth=1, alpha=0.8)
-        ax.set_xlim(-4, 4)
-        ax.set_ylim(-4, 4)
-        plt.axis("equal")
-        #ax.add_collection(lc)
-        for i in range(obstacles.shape[0]):
-            ax.add_patch(patches.Rectangle((obstacles[i][0]-obstacles[i][3]/2,obstacles[i][1]-obstacles[i][4]/2), obstacles[i][3], obstacles[i][4]))
-        plt.show()
+    #     fig, ax = plt.subplots()
+    #     for path in RRT_calculator.steering_paths:
+    #         path.plot(ax, endpoint=True, color="red", linewidth=1, alpha=0.8)
+    #     ax.set_xlim(-4, 4)
+    #     ax.set_ylim(-4, 4)
+    #     plt.axis("equal")
+    #     #ax.add_collection(lc)
+    #     for i in range(obstacles.shape[0]):
+    #         ax.add_patch(patches.Rectangle((obstacles[i][0]-obstacles[i][3]/2,obstacles[i][1]-obstacles[i][4]/2), obstacles[i][3], obstacles[i][4]))
+    #     plt.show()
     
-        #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
-        #plt.show()
+    #     #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
+    #     #plt.show()
 
 
     if user == "Thomas":
