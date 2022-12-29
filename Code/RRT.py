@@ -9,7 +9,7 @@ from matplotlib import patches
 import Steering as steer
 from tqdm import tqdm
 
-user = "Kian"
+user = "Paula"
 
 import sys
 sys.path.append("../mujoco")
