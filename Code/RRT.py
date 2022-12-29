@@ -48,6 +48,7 @@ class Edge():
         self.end_node = Node(path.end_pose, self.path.length, self.start_node, self)
 
 
+
 '''
 The environment map that is being planned for is a collection of obstacles and also contains parameters that do not change over the lifetime of the map.
 The map can be used to check for collisions, as well as generating random positions or poses.

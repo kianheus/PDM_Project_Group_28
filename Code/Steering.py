@@ -4,6 +4,7 @@ import matplotlib.patches as patches
 import time
 import itertools
 from collections.abc import Iterable
+import pygame
 
 # Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
 def rot(theta) -> np.ndarray:
@@ -49,7 +50,9 @@ class Line(Segment):
         kwargs.pop("s", None)
         ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
 
-    def plot_pygame():
+    def plot_pygame(self, workspace):
+        black = (0, 0, 0)
+        pygame.draw.line(workspace, black, self.point_start, self.point_end)
         pass
 
 class Arc(Segment):
@@ -128,7 +131,7 @@ class Arc(Segment):
                                     theta1=np.rad2deg(ang_s),
                                     theta2=np.rad2deg(ang_e), fill=False, **kwargs))
 
-    def plot_pygame():
+    def plot_pygame(self, ):
         pass
 
 
