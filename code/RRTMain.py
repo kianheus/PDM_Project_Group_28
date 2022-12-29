@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# Import needed packages
+# -----------------------------------------------------------------------------
+
 import pygame
 import carenv
 import time
@@ -11,28 +15,31 @@ from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 
+
+# -----------------------------------------------------------------------------
+# Define main fucntion
+# -----------------------------------------------------------------------------
+
 def main():
     
+    # Define code to execute, can be "Paula" or "Kian"
     user = "Kian"
     
+    # Create environment and extract relevant information
     env = carenv.Car(render=False)
     state, obstacles = env.reset() #start with reset
-    obstacles[:,3:] = obstacles[:,3:]*2 
+    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
     start_time = time.time()
     
     # Define some sets of cooridnates
     workspace_center = np.array([0, 0]) # Coordinate center of workspace
     workspace_size = np.array([30, 30]) # Dimensions of workspace
-    start_coord = state
-    #start_coord = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
+    start_coord = state # Starting position and orientation of robot (x, y, theta)
     goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
     
     #Computational variables
     n_line_segments = 100
-    
-    # [x, y, rotation, length, width]
-    # obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
     radius = 0.5
     collision_resolution = 0.05
     
