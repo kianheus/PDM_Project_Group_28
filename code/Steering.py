@@ -5,6 +5,7 @@ import time
 import itertools
 from collections.abc import Iterable
 import pygame
+import RRT
 
 # Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
 def rot(theta) -> np.ndarray:
@@ -50,10 +51,13 @@ class Line(Segment):
         kwargs.pop("s", None)
         ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
 
-    def plot_pygame(self, workspace):
-        black = (0, 0, 0)
-        pygame.draw.line(workspace, black, self.point_start, self.point_end)
-        pass
+    def plot_pygame(self, workspace, workspace_size, color):
+        # Transform points from Mujoco ref frame (origin at workspace center)
+        # to pygame ref frame (origin at top left corner)
+        point_start_pg = RRT.to_pygame_coords(self.point_start, workspace_size) 
+        point_end_pg = RRT.to_pygame_coords(self.point_end, workspace_size) 
+        
+        pygame.draw.line(workspace, color, point_start_pg, point_end_pg)
 
 class Arc(Segment):
 
@@ -131,8 +135,22 @@ class Arc(Segment):
                                     theta1=np.rad2deg(ang_s),
                                     theta2=np.rad2deg(ang_e), fill=False, **kwargs))
 
-    def plot_pygame(self, ):
-        pass
+    def plot_pygame(self, workspace, workspace_size, color):
+        
+        ang_s, ang_e = self.angle_start, self.angle_end  
+        if self.signed_radius < 0:
+            ang_s, ang_e = ang_e, ang_s
+            
+        
+        center_pg = RRT.to_pygame_coords(self.center, workspace_size)
+        
+        rect_left = center_pg[0] - radius  
+        rect_top = center_pg[1] - radius
+        rect_width = self.radius*2
+        rect_height = self.radius*2
+
+        rect = (rect_left, rect_top, rect_width, rect_height)
+        pygame.draw.arc(workspace, color, rect, ang_s, ang_e)
 
 
 ### Classes defining a path, which is just a collection of segments
