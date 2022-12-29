@@ -174,7 +174,7 @@ class Tree():
         offset[:,2] /= 10
         distances = np.linalg.norm(offset, axis=1)
         idx_closest = np.argmin(distances)
-        if distances[idx_closest] > 1e-4:
+        if distances[idx_closest] > 1e-3:
             print(f"No matching node found. Closest node at {distances[idx_closest]}.")
             print(f"{distances=}")
             print(f"{offset=}")
