@@ -201,8 +201,8 @@ class Path():
         diff = points_b - points_a
         mid = (points_a + points_b) / 2
         angles = np.arctan2(diff[:,1], diff[:,0])
-        print(f"{mid=}")
-        print(f"{np.expand_dims(angles, axis=1)=}")
+        # print(f"{mid=}")
+        # print(f"{np.expand_dims(angles, axis=1)=}")
         return np.hstack((mid, np.expand_dims(angles, axis=1)))
 
 class PathTST(Path):
