@@ -9,7 +9,7 @@ from matplotlib import patches
 import Steering as steer
 from tqdm import tqdm, trange
 
-user = "thomas2"
+user = "thomas"
 
 import sys
 sys.path.append("../mujoco")
@@ -22,10 +22,19 @@ state, obstacles = env.reset() #start with reset
 obstacles[:,3:] = obstacles[:,3:]*2 
 
 
+'''
+Generate a pose at position (x, y) and at an angle t in degrees
+'''
 def pose_deg(x, y, t):
     return np.array([x, y, np.deg2rad(t)])
 
 
+'''
+A single node in the RR tree.
+A node has a given position/angle.
+Each node also has a backreference to the edge leading to it, as well as the previous node visited.
+Finally, each node has a set distance from the origin point.
+'''
 class Node():
     def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
         self.pose = pose
@@ -36,6 +45,12 @@ class Node():
             # print(f"{parent_node=}")
             self.distance_from_origin += parent_node.distance_from_origin
 
+
+'''
+An edge is a connection between two nodes of the RR tree.
+Each edge has a reference to a start node and an end node. Note that the end node will also have a reference to the start node and this edge.
+Finally, the edge has a path object, which in this case is a Dubbins Path
+'''
 class Edge():
     def __init__(self, start_node : Node, path : steer.Path):
         self.start_node = start_node
@@ -43,6 +58,10 @@ class Edge():
         self.end_node = Node(path.end_pose, self.path.length, self.start_node, self)
 
 
+'''
+The environment map that is being planned for is a collection of obstacles and also contains parameters that do not change over the lifetime of the map.
+The map can be used to check for collisions, as well as generating random positions or poses.
+'''
 class Map():
     def __init__(self, obstacles : np.ndarray, vehicle_radius : float):
         self.obstacles = obstacles
@@ -80,15 +99,27 @@ class Map():
             ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2,obstacle[1]-obstacle[4]/2), obstacle[3], obstacle[4]))
 
 
+'''
+This class contains the RR tree.
+The tree has a base node, which the tree is grown from.
+The tree also has a list of edge objects, which can be used to backtrack through the tree.
+The tree has a list of node poses (not node objects), which can be used to rapidly find the nearest node.
+The tree also contains a collision map and parameters of the search
+'''
 class Tree():
     def __init__(self, map : Map, turning_radius : float, initial_pose : np.ndarray, collision_resolution : float):
         self.map = map
         self.base_node = Node(initial_pose)
         self.edges : list[Edge] = []
         self.node_poses = np.array([initial_pose])
+        self.node_distances = np.array([0])
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
 
+
+    '''
+    Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
+    '''
     def add_node(self, start_node : Node, path : steer.Path):
         node = start_node
         for segment in path.segments:
@@ -96,31 +127,41 @@ class Tree():
             new_edge = Edge(node, path_new)
             self.edges.append(new_edge)
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
+            self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
             node = new_edge.end_node
         # print("Added new node")
 
+    '''
+    This function selects a random pose in the environment (which is not in colision) and connects it to the graph
+    '''
     def grow_single(self):
         self.add_path_to(self.map.random_pose())
 
 
-    def add_path_to(self, new_coord : np.ndarray, modify_angle=True) -> bool:
-        closest_distance = np.min(np.linalg.norm(self.node_poses[:,:2] - new_coord[:2], axis=1))
+    '''
+    This function finds a path from a node on the tree to the new node.
+    If this path is in collision, it is not added to the tree.
+    Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
+    '''
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
+        distances = np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1) + self.node_distances
+        closest_distance = np.min(distances)
         upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
-        valid_indices = np.linalg.norm(self.node_poses[:,:2] - new_coord[:2], axis=1) <= upper_bound
+        valid_indices = distances <= upper_bound
         valid_indices = np.arange(len(valid_indices))[valid_indices]
 
         potential_steering_paths : list[steer.Path] = []
-        angle_random = new_coord[2]
+        angle_random = new_pose[2]
 
         for idx in valid_indices:
             if modify_angle:
-                displacement = (new_coord - self.node_poses[idx])[:2]
+                displacement = (new_pose - self.node_poses[idx])[:2]
                 angle_displacement = np.arctan2(displacement[1], displacement[0])
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
-                new_coord[2] = angle
-            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_coord, self.turning_radius))
+                new_pose[2] = angle
+            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
 
-        shortest_path_idx = np.argmin([path.length for path in potential_steering_paths])
+        shortest_path_idx = np.argmin([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
         steering_path = potential_steering_paths[shortest_path_idx]
         parent_coord_idx = valid_indices[shortest_path_idx]
@@ -445,6 +486,7 @@ if user == "thomas2":
     # plt.show()
 
     # plt.imshow(Z,origin='lower',interpolation='bilinear')
+    # plt.show()
 
     # for m in mg.T:
     #     # print(f"{m=}")
