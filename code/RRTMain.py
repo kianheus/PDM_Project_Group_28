@@ -29,7 +29,7 @@ from matplotlib import patches
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=False)
+    env = carenv.Car(render=True)
     state, obstacles = env.reset() #start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
@@ -46,10 +46,10 @@ def main():
     collision_resolution = 0.05
     
     # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    # mujoco_sim(env, points)
+    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    mujoco_sim(env, points)
 
-    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    # test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
 
     
