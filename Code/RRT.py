@@ -1,30 +1,21 @@
-import numpy as np
-import math
+# -----------------------------------------------------------------------------
+# Import needed packages
+# -----------------------------------------------------------------------------
+
 import pygame
-import time
-from sys import exit
-from matplotlib import pyplot as plt
-from matplotlib import collections as mc
-from matplotlib import patches
+import numpy as np
 import Steering as steer
-from tqdm import tqdm
-
-user = "Kian"
-
 import sys
 sys.path.append("../mujoco")
 sys.path.append("mujoco")
 
-import carenv
+# -----------------------------------------------------------------------------
+# Define class that executes the RRT algorithm
+# -----------------------------------------------------------------------------
 
-env = carenv.Car(render=False)
-state, obstacles = env.reset() #start with reset
-obstacles[:,3:] = obstacles[:,3:]*2 
-
-start_time = time.time()
 class RRTCalc:
 
-    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, vehicle_radius, n_line_segments = 100):
+    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, workspace_center, workspace_size, vehicle_radius,  n_line_segments = 100):
         self.graph_coords = np.array([[start_x, start_y, start_theta]])
         self.graph_parent_idx = np.array([0])
         self.n_line_segments = n_line_segments
@@ -34,12 +25,14 @@ class RRTCalc:
         self.radius = radius
         self.steering_paths = []
         self.vehicle_radius = vehicle_radius
+        self.workspace_center = workspace_center
+        self.workspace_size = workspace_size
 
 
     def new_point(self):
         collision = True
         while collision:
-            new_xy = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
+            new_xy = np.random.uniform(low=self.workspace_center-self.workspace_size/2, high=self.workspace_center+self.workspace_size/2, size = (1,2))[0]
             collision = self.collision_check(new_xy)
         # new_theta = np.random.uniform(0, 2*np.pi)
         new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
@@ -94,30 +87,9 @@ class RRTCalc:
         return(np.array([np.linspace(parent_coord[0], new_coord[0], self.n_line_segments),
                    np.linspace(parent_coord[1], new_coord[1], self.n_line_segments)]).T)
 
-
-
-def meters2pixels(x):
-    return x * 30
-
-def to_pygame_coords(point, window_size):
-    x_offset = window_size[0]/2
-    y_offset = window_size[1]/2
-
-    x = point[0]
-    y = point[1]
-    
-    if y > 0:
-        y_new = y_offset - y
-    else:
-        y_new = y_offset + abs(y)
-
-    if x > 0:
-        x_new = x_offset + x
-    else:
-        x_new = x_offset - abs(x)
-
-    new_point = [x_new, y_new]
-    return new_point
+# -----------------------------------------------------------------------------
+# Define class that visualizes the RRT algorithm and final path
+# -----------------------------------------------------------------------------
 
 class RRTPlot():
 
@@ -187,70 +159,42 @@ class RRTPlot():
 
             pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacle_left, obstacle_top, obstacle_l, obstacle_w))
 
+# -----------------------------------------------------------------------------
+# Define some auxiliary functions
+# -----------------------------------------------------------------------------
 
-# Define some sets of cooridnates
-workspace_center = np.array([0, 0]) # Coordinate center of workspace
-workspace_size = np.array([30, 30]) # Dimensions of workspace
-start_coord = state
-#start_coord = np.array([0, 0, 0]) # Starting position and orientation of robots (x, y, theta)
-goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
-
-#Computational variables
-n_line_segments = 100
-
-# [x, y, rotation, length, width]
-# obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
-radius = 0.5
-collision_resolution = 0.05
-
-
-
-
-if user == "Paula":
-    pygame.init()
-    workspace = RRTPlot(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    workspace.draw_workspace()
-    pygame.display.update()
-    pygame.event.clear()
-    pygame.event.wait(0)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            if event.type==pygame.KEYDOWN:
-                if event.key==pygame.K_c:
-                    intro=False
-                if event.key==pygame.K_q:
-                    pygame.quit()
-                    exit()
-
-if user == "Kian":
-    RRT_calculator = RRTCalc(start_coord[0], start_coord[1], start_coord[2], obstacles, collision_resolution, radius, vehicle_radius=0.1)
-    for i in tqdm(range(3000)): #range(200): #
-        RRT_calculator.new_point()
-
-
+def meters2pixels(x):
+    
+    """        
+    This function scales up the input (given in meter) by a given factor so
+    so that the quantity is returned in pixels
     """
-    lines = []
-    for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent_idx)):
-        line = [RRT_calculator.graph_coords[i,:2], (RRT_calculator.graph_coords[parent,:2])]
-        lines.append(line)
-    lc = mc.LineCollection(lines, linewidths=2)#, colors = RRT_calculator.colours)
+    
+    return x * 30
+
+def to_pygame_coords(point, window_size):
+    
     """
+    This function coverts the given point coordinates which are given with 
+    respect to the center of the window to the reference frame used in pygame.
+    This pygame reference frame has its origin in the top left edge of the window
+    """
+    
+    x_offset = window_size[0]/2
+    y_offset = window_size[1]/2
+    
+    x = point[0]
+    y = point[1]
+    
+    if y > 0:
+        y_new = y_offset - y
+    else:
+        y_new = y_offset + abs(y)
 
-    fig, ax = plt.subplots()
-    for path in RRT_calculator.steering_paths:
-        path.plot(ax, endpoint=True, color="red", linewidth=1, alpha=0.8)
-    ax.set_xlim(-4, 4)
-    ax.set_ylim(-4, 4)
-    plt.axis("equal")
-    #ax.add_collection(lc)
-    for i in range(obstacles.shape[0]):
-        ax.add_patch(patches.Rectangle((obstacles[i][0]-obstacles[i][3]/2,obstacles[i][1]-obstacles[i][4]/2), obstacles[i][3], obstacles[i][4]))
-    plt.show()
+    if x > 0:
+        x_new = x_offset + x
+    else:
+        x_new = x_offset - abs(x)
 
-    #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
-    #plt.show()
-
+    new_point = [x_new, y_new]
+    return new_point
