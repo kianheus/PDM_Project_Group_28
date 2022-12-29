@@ -49,6 +49,9 @@ class Line(Segment):
         kwargs.pop("s", None)
         ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
 
+    def plot_pygame():
+        pass
+
 class Arc(Segment):
 
     def __init__(self, centre, radius, radius_vector_start, radius_vector_end):
@@ -124,6 +127,9 @@ class Arc(Segment):
                                     2*self.radius, 2*self.radius,
                                     theta1=np.rad2deg(ang_s),
                                     theta2=np.rad2deg(ang_e), fill=False, **kwargs))
+
+    def plot_pygame():
+        pass
 
 
 ### Classes defining a path, which is just a collection of segments
