@@ -46,6 +46,7 @@ class Line(Segment):
         return self.point_start + b * (self.point_end - self.point_start)
 
     def plot(self, ax, **kwargs):
+        kwargs.pop("s", None)
         ax.plot([self.point_start[0], self.point_end[0]], [self.point_start[1], self.point_end[1]], **kwargs)
 
 class Arc(Segment):
@@ -115,6 +116,7 @@ class Arc(Segment):
 
     def plot(self, ax, **kwargs):
         kwargs = {(key if key != 'color' else 'ec'): value for key, value in kwargs.items()}
+        kwargs.pop("s", None)
         ang_s, ang_e = self.angle_start, self.angle_end
         if self.signed_radius < 0:
             ang_s, ang_e = ang_e, ang_s
@@ -146,7 +148,7 @@ class Path():
             segment.plot(ax, **kwargs)
         if endpoint:
             point_end, angle_end = self.interpolate_angles(n=2)
-            plot_point(ax, point_end[-1], angle_end[-1])
+            plot_point(ax, point_end[-1], angle_end[-1], **kwargs)
 
     def plot_interpolate(self, ax, n=100, d=None):
         points = self.interpolate(n, d)
@@ -190,6 +192,9 @@ class Path():
 
 class PathTST(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
+        self.start_pose = np.hstack((point_start, angle_start))
+        self.end_pose = np.hstack((point_end, angle_end))
+
         arc_start : Arc = Arc.from_origin(point_start, angle_start, radius_start)
         arc_end : Arc =   Arc.from_origin(point_end, angle_end, radius_end)
 
@@ -232,6 +237,9 @@ class PathTST(Path):
 
 class PathTTT(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle):
+        self.start_pose = np.hstack((point_start, angle_start))
+        self.end_pose = np.hstack((point_end, angle_end))
+
         arc_start = Arc.from_origin(point_start, angle_start, radius_start)
         arc_end =   Arc.from_origin(point_end, angle_end, radius_end)
 
@@ -290,7 +298,15 @@ class PathTTT(Path):
                     opt_len = opt.length
         return opt
 
+class PathSimple(Path):
+    def __init__(self, segment):
+        self.segments = [segment]
+        super().__init__()
+        points, angles = self.interpolate_angles(n=2)
 
+        self.start_pose = np.hstack((points[0], angles[0]))
+        self.end_pose = np.hstack((points[-1], angles[-1]))
+        
 
 # Function that generates the shortest path from start to end with a specified turning radius
 # Returns a Path object
@@ -311,9 +327,11 @@ def optimal_path(point_start, point_end, radius) -> Path:
     return opt
 
 # Helper function to plot a point with a direction
-def plot_point(ax, P, theta, color="blue", length=0.1, label=None):
-    ax.scatter(P[0], P[1], color=color)
-    ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], color=color, linewidth=3, label=label)
+def plot_point(ax, P, theta, length=0.1, **kwargs):
+    kwargs["linewidth"] = 3
+    ax.scatter(P[0], P[1], **kwargs)
+    kwargs.pop("s", None)
+    ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], **kwargs)
 
 
 ### Some main functions for testing

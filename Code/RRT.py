@@ -5,87 +5,177 @@
 import pygame
 import numpy as np
 import Steering as steer
-import sys
-sys.path.append("../mujoco")
-sys.path.append("mujoco")
+from tqdm import tqdm, trange
+from matplotlib import pyplot as plt
+from matplotlib import patches
 
 # -----------------------------------------------------------------------------
 # Define class that executes the RRT algorithm
 # -----------------------------------------------------------------------------
+'''
+Generate a pose at position (x, y) and at an angle t in degrees
+'''
+def pose_deg(x, y, t):
+    return np.array([x, y, np.deg2rad(t)])
 
-class RRTCalc:
 
-    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, workspace_center, workspace_size, vehicle_radius,  n_line_segments = 100):
-        self.graph_coords = np.array([[start_x, start_y, start_theta]])
-        self.graph_parent_idx = np.array([0])
-        self.n_line_segments = n_line_segments
+'''
+A single node in the RR tree.
+A node has a given position/angle.
+Each node also has a backreference to the edge leading to it, as well as the previous node visited.
+Finally, each node has a set distance from the origin point.
+'''
+class Node():
+    def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
+        self.pose = pose
+        self.parent_node = parent_node
+        self.parent_edge = parent_edge
+        self.distance_from_origin = distance_from_parent
+        if parent_node is not None:
+            # print(f"{parent_node=}")
+            self.distance_from_origin += parent_node.distance_from_origin
+
+
+'''
+An edge is a connection between two nodes of the RR tree.
+Each edge has a reference to a start node and an end node. Note that the end node will also have a reference to the start node and this edge.
+Finally, the edge has a path object, which in this case is a Dubbins Path
+'''
+class Edge():
+    def __init__(self, start_node : Node, path : steer.Path):
+        self.start_node = start_node
+        self.path = path
+        self.end_node = Node(path.end_pose, self.path.length, self.start_node, self)
+
+
+'''
+The environment map that is being planned for is a collection of obstacles and also contains parameters that do not change over the lifetime of the map.
+The map can be used to check for collisions, as well as generating random positions or poses.
+'''
+class Map():
+    def __init__(self, obstacles : np.ndarray, vehicle_radius : float, workspace_center, workspace_size):
         self.obstacles = obstacles
-        self.colours = np.array([["blue"]])
-        self.collision_resolution = collision_resolution
-        self.radius = radius
-        self.steering_paths = []
         self.vehicle_radius = vehicle_radius
         self.workspace_center = workspace_center
         self.workspace_size = workspace_size
 
+    def collision_check(self, points : np.ndarray) -> bool:
+        points = np.atleast_2d(points)
+        for point in points:
+            for obstacle in self.obstacles:
+                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
+                    return True
+        return False
 
-    def new_point(self):
+    def collision_check_single(self, point : np.ndarray) -> bool:
+        for obstacle in self.obstacles:
+            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
+                return True
+        return False
+
+    def random_position(self) -> np.ndarray:
         collision = True
         while collision:
             new_xy = np.random.uniform(low=self.workspace_center-self.workspace_size/2, high=self.workspace_center+self.workspace_size/2, size = (1,2))[0]
             collision = self.collision_check(new_xy)
-        # new_theta = np.random.uniform(0, 2*np.pi)
+        return new_xy
+
+    def random_pose(self) -> np.ndarray:
         new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
-        # new_theta = 0
-        new_coord = np.hstack((new_xy, new_theta))
-        self.path_check(new_coord)
+        return np.hstack((self.random_position(), new_theta))
 
-    def path_check(self, new_coord):
-        closest_distance = np.min(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
-        upper_bound = closest_distance + 7/3 * np.pi * self.radius
-        valid_indices = np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1) <= upper_bound
-        potential_steering_paths = []
-        angle_random = new_coord[2]
-        for idx in np.arange(len(valid_indices))[valid_indices]:
-            displacement = (new_coord - self.graph_coords[idx])[:2]
-            angle_displacement = np.arctan2(displacement[1], displacement[0])
-            angle = (angle_displacement + angle_random) % (np.pi * 2)
-            new_coord[2] = angle
-            potential_steering_paths.append(steer.optimal_path(self.graph_coords[idx], new_coord, self.radius))
-        shortest_path_idx = np.argmin([path.length for path in potential_steering_paths])
-        
-        steering_path = potential_steering_paths[shortest_path_idx]
-        parent_coord_idx = np.arange(len(valid_indices))[valid_indices][shortest_path_idx]
-
-        discrete_path = steering_path.interpolate(d=self.collision_resolution)
-
-        """
-        closest_node_id = np.argmin(np.linalg.norm(self.graph_coords[:,:2] - new_coord[:2], axis=1))
-        parent_coord = self.graph_coords[closest_node_id]
-        """
-        collision = False
-        for i in range(len(discrete_path)):
-            collision = self.collision_check(discrete_path[i])
-            if collision:
-                break
-
-        if not collision:
-            self.steering_paths.append(steering_path)
-            self.graph_coords = np.append(self.graph_coords, np.array([new_coord]), axis = 0)
-            self.graph_parent_idx = np.append(self.graph_parent_idx, parent_coord_idx)
-        return()
-
-    def collision_check(self, point):
+    def plot(self, ax : plt.Axes):
         for obstacle in self.obstacles:
-            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                return(True)
-                break
-        return(False)
+            ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2,obstacle[1]-obstacle[4]/2), obstacle[3], obstacle[4]))
 
-    def path_discretization(self, new_coord, parent_coord):
-        return(np.array([np.linspace(parent_coord[0], new_coord[0], self.n_line_segments),
-                   np.linspace(parent_coord[1], new_coord[1], self.n_line_segments)]).T)
+
+'''
+This class contains the RR tree.
+The tree has a base node, which the tree is grown from.
+The tree also has a list of edge objects, which can be used to backtrack through the tree.
+The tree has a list of node poses (not node objects), which can be used to rapidly find the nearest node.
+The tree also contains a collision map and parameters of the search
+'''
+class Tree():
+    def __init__(self, map : Map, turning_radius : float, initial_pose : np.ndarray, collision_resolution : float):
+        self.map = map
+        self.base_node = Node(initial_pose)
+        self.edges : list[Edge] = []
+        self.node_poses = np.array([initial_pose])
+        self.node_distances = np.array([0])
+        self.turning_radius = turning_radius
+        self.collision_resolution = collision_resolution
+
+
+    '''
+    Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
+    '''
+    def add_node(self, start_node : Node, path : steer.Path):
+        node = start_node
+        for segment in path.segments:
+            path_new = steer.PathSimple(segment)
+            new_edge = Edge(node, path_new)
+            self.edges.append(new_edge)
+            self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
+            self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
+            node = new_edge.end_node
+        # print("Added new node")
+
+    '''
+    This function selects a random pose in the environment (which is not in colision) and connects it to the graph
+    '''
+    def grow_single(self):
+        self.add_path_to(self.map.random_pose())
+
+
+    '''
+    This function finds a path from a node on the tree to the new node.
+    If this path is in collision, it is not added to the tree.
+    Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
+    '''
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
+        distances = np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1) + self.node_distances
+        closest_distance = np.min(distances)
+        upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
+        valid_indices = distances <= upper_bound
+        valid_indices = np.arange(len(valid_indices))[valid_indices]
+
+        potential_steering_paths : list[steer.Path] = []
+        angle_random = new_pose[2]
+
+        for idx in valid_indices:
+            if modify_angle:
+                displacement = (new_pose - self.node_poses[idx])[:2]
+                angle_displacement = np.arctan2(displacement[1], displacement[0])
+                angle = (angle_displacement + angle_random) % (np.pi * 2)
+                new_pose[2] = angle
+            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
+
+        shortest_path_idxs = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+        
+        for i, shortest_path_idx in enumerate(shortest_path_idxs):
+            if i > 4:
+                break
+
+            steering_path = potential_steering_paths[shortest_path_idx]
+            parent_coord_idx = valid_indices[shortest_path_idx]
+
+            discrete_path = steering_path.interpolate(d=self.collision_resolution)
+
+            collision = self.map.collision_check(discrete_path)
+            if collision:
+                continue
+
+            if parent_coord_idx == 0:
+                self.add_node(self.base_node, steering_path)
+            else:
+                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
+
+            return True
+        return False
+
 
 # -----------------------------------------------------------------------------
 # Define class that visualizes the RRT algorithm and final path
@@ -164,13 +254,7 @@ class RRTPlot():
 # -----------------------------------------------------------------------------
 
 def meters2pixels(x):
-    
-    """        
-    This function scales up the input (given in meter) by a given factor so
-    so that the quantity is returned in pixels
-    """
-    
-    return x * 30
+   return x * 30
 
 def to_pygame_coords(point, window_size):
     
@@ -179,7 +263,6 @@ def to_pygame_coords(point, window_size):
     respect to the center of the window to the reference frame used in pygame.
     This pygame reference frame has its origin in the top left edge of the window
     """
-    
     x_offset = window_size[0]/2
     y_offset = window_size[1]/2
     
@@ -195,6 +278,7 @@ def to_pygame_coords(point, window_size):
         x_new = x_offset + x
     else:
         x_new = x_offset - abs(x)
-
     new_point = [x_new, y_new]
     return new_point
+
+

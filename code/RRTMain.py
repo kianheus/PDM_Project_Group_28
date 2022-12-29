@@ -3,14 +3,20 @@
 # -----------------------------------------------------------------------------
 
 import pygame
+
+import sys
+sys.path.append("../mujoco")
+sys.path.append("mujoco")
+
 import carenv
 import time
 import numpy as np
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from sys import exit
 from RRT import RRTPlot
-from RRT import RRTCalc
+import RRT
+import Steering as steer
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
@@ -22,8 +28,8 @@ from matplotlib import patches
 
 def main():
     
-    # Define code to execute, can be "Paula" or "Kian"
-    user = "Kian"
+    # Define code to execute, can be "Paula" or "Kian" or "Thomas"
+    user = "Thomas"
     
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
@@ -107,6 +113,63 @@ def main():
     
         #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
         #plt.show()
+
+
+    if user == "Thomas":
+        env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
+
+        initial_pose = RRT.pose_deg(0.0, 0.0, 0)
+        final_pose = RRT.pose_deg(2.0, -4.0, 180)
+
+        tree = RRT.Tree(env_map, turning_radius=radius, initial_pose=initial_pose, collision_resolution=0.05)
+        done = False
+        close_time=time.time() + 60
+        for i in trange(1000):
+            if time.time()>close_time:
+                print("Time limit met, stopping.")
+                break
+            tree.grow_single()
+            done = tree.add_path_to(final_pose, modify_angle=False)
+            if done:
+                print("Found a path.")
+                break
+
+        
+        
+        fig, ax = plt.subplots()
+        env_map.plot(ax)
+
+        for edge in tree.edges:
+            # print("edge")
+            edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+
+        if done:
+            print("Done!")
+            node = tree.edges[-1].end_node
+            print(f"distance = {node.distance_from_origin:.02f}")
+            dist = 0
+            while node is not None:
+                # edge.path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0)
+                # steer.plot_point(ax, node.pose[:2], node.pose[2], color="orange")
+                if node.parent_edge is not None:
+                    path : steer.Path = node.parent_edge.path
+                    dist += path.length
+                    path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+                node = node.parent_node
+
+            print(f"distance = {dist:.02f}")
+            
+
+        steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
+        steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+
+        ax.set_xlim(-4, 4)
+        ax.set_ylim(-4, 4)
+        plt.axis("equal")
+
+        
+        plt.show()
+    
 
 if __name__ == '__main__':
     main()
