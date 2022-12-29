@@ -11,7 +11,7 @@
         		rgb2="0.2 0.2 0.9" markrgb="0.8 0.8 0.8" width="300" height="300"/>"true"/>
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="2 2"
         		reflectance="0.1"/>
-    <mesh name="hospitalbed" file="hospitalbed.stl" scale="0.01 0.01 0.01"/>
+    <mesh name="hospitalbed" file="hospitalbed.STL" scale="0.01 0.01 0.01"/>
   </asset>
   <visual>
     <quality shadowsize = "6000"/>
@@ -73,9 +73,52 @@
     	<geom name="wallhall8" type="box" contype="1" conaffinity="1" size="1.1 0.05 0.750000"/>
     </body> 
 
-    <body name="hospitalbed1" pos="-5 0 0.25" euler="0 0 0.000000">
-      <joint type="free" />
-    	<geom name="hospitalbed1" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0" mass="100" rgba = '1 1 1 1'/>
+    <body name="hospitalbed1" pos="-2.5 -4 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed1" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed2" pos="-2.5 -6 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed2" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed3" pos="-2.5 -8 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed3" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed4" pos="2.5 -4 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed4" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed5" pos="2.5 -6 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed5" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed6" pos="2.5 -8 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed6" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed7" pos="-2.5 4 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed7" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed8" pos="-2.5 6 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed8" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed9" pos="-2.5 8 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed9" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed10" pos="2.5 4 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed10" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed11" pos="2.5 6 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed11" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
+    </body> 
+
+    <body name="hospitalbed12" pos="2.5 8 0.0" euler="0 0 0.000000">
+    	<geom name="hospitalbed12" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
     </body> 
 
   </worldbody>

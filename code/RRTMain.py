@@ -150,7 +150,7 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
 def mujoco_sim(env, points):
     
     points = np.flipud(points)
-    print(points.shape)
+    
     
     #function used to bound output of controllers
     def bound(low, high, value):
@@ -188,7 +188,7 @@ def mujoco_sim(env, points):
     longitudal_pid = PIDcontroller(15, 0, 3)
 
     state, obstacles = env.reset() #start with reset
-
+    print(obstacles)
     starttime = time.time()
     i = 0
     n = 0
