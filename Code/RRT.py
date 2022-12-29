@@ -1,29 +1,26 @@
-import numpy as np
-import math
 import pygame
-import time
-from sys import exit
-from matplotlib import pyplot as plt
-from matplotlib import collections as mc
-from matplotlib import patches
+import numpy as np
+#from matplotlib import pyplot as plt
+#from matplotlib import collections as mc
+#from matplotlib import patches
 import Steering as steer
-from tqdm import tqdm
+#from tqdm import tqdm
 
-user = "Paula"
+#user = "Paula"
 
 import sys
 sys.path.append("../mujoco")
 
-import carenv
+#import carenv
 
-env = carenv.Car(render=False)
-state, obstacles = env.reset() #start with reset
-obstacles[:,3:] = obstacles[:,3:]*2 
+#env = carenv.Car(render=False)
+#state, obstacles = env.reset() #start with reset
+#obstacles[:,3:] = obstacles[:,3:]*2 
 
-start_time = time.time()
+#start_time = time.time()
 class RRTCalc:
 
-    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, vehicle_radius, n_line_segments = 100):
+    def __init__(self, start_x, start_y, start_theta, obstacles, collision_resolution, radius, workspace_center, workspace_size, vehicle_radius,  n_line_segments = 100):
         self.graph_coords = np.array([[start_x, start_y, start_theta]])
         self.graph_parent_idx = np.array([0])
         self.n_line_segments = n_line_segments
@@ -33,12 +30,14 @@ class RRTCalc:
         self.radius = radius
         self.steering_paths = []
         self.vehicle_radius = vehicle_radius
+        self.workspace_center = workspace_center
+        self.workspace_size = workspace_size
 
 
     def new_point(self):
         collision = True
         while collision:
-            new_xy = np.random.uniform(low=workspace_center-workspace_size/2, high=workspace_center+workspace_size/2, size = (1,2))[0]
+            new_xy = np.random.uniform(low=self.workspace_center-self.workspace_size/2, high=self.workspace_center+self.workspace_size/2, size = (1,2))[0]
             collision = self.collision_check(new_xy)
         # new_theta = np.random.uniform(0, 2*np.pi)
         new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
@@ -101,7 +100,7 @@ def meters2pixels(x):
 def to_pygame_coords(point, window_size):
     x_offset = window_size[0]/2
     y_offset = window_size[1]/2
-
+    
     x = point[0]
     y = point[1]
     
@@ -186,7 +185,7 @@ class RRTPlot():
 
             pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacle_left, obstacle_top, obstacle_l, obstacle_w))
 
-
+"""
 # Define some sets of cooridnates
 workspace_center = np.array([0, 0]) # Coordinate center of workspace
 workspace_size = np.array([30, 30]) # Dimensions of workspace
@@ -232,12 +231,15 @@ if user == "Kian":
 
 
     """
+
+"""
     lines = []
     for i, (coords, parent) in enumerate(zip(RRT_calculator.graph_coords, RRT_calculator.graph_parent_idx)):
         line = [RRT_calculator.graph_coords[i,:2], (RRT_calculator.graph_coords[parent,:2])]
         lines.append(line)
     lc = mc.LineCollection(lines, linewidths=2)#, colors = RRT_calculator.colours)
     """
+"""
 
     fig, ax = plt.subplots()
     for path in RRT_calculator.steering_paths:
@@ -252,4 +254,4 @@ if user == "Kian":
 
     #plt.scatter(RRT_calculator.graph_x, RRT_calculator.graph_y)
     #plt.show()
-
+"""
