@@ -119,17 +119,17 @@ def main():
         env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
         initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-        final_pose = RRT.pose_deg(2.0, -4.0, 180)
+        final_pose = RRT.pose_deg(1.0, 3.0, 180)
 
         tree = RRT.Tree(env_map, turning_radius=radius, initial_pose=initial_pose, collision_resolution=0.05)
         done = False
-        close_time=time.time() + 60
-        for i in trange(1000):
+        close_time=time.time() + 30
+        for i in trange(500):
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
             tree.grow_single()
-            done = tree.add_path_to(final_pose, modify_angle=False)
+            done = tree.add_path_to(final_pose, modify_angle=False) # Thomas, you idiot. We only need to check the newest node.
             if done:
                 print("Found a path.")
                 break
@@ -148,6 +148,7 @@ def main():
             node = tree.edges[-1].end_node
             print(f"distance = {node.distance_from_origin:.02f}")
             dist = 0
+            points = np.array([[0.0, 0.0, 0.0]])
             while node is not None:
                 # edge.path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0)
                 # steer.plot_point(ax, node.pose[:2], node.pose[2], color="orange")
@@ -155,9 +156,17 @@ def main():
                     path : steer.Path = node.parent_edge.path
                     dist += path.length
                     path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+                    print(f"{points.shape=}")
+                    print(f"{path.interpolate_angles_2(d=0.05).shape=}")
+
+                    points = np.vstack((points, path.interpolate_angles_2(d=0.05)))
                 node = node.parent_node
+            points = points[1:,:]
+            print(f"{points=}")
 
             print(f"distance = {dist:.02f}")
+
+            plt.scatter(points[:,0], points[:,1])
             
 
         steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
@@ -166,6 +175,8 @@ def main():
         ax.set_xlim(-4, 4)
         ax.set_ylim(-4, 4)
         plt.axis("equal")
+
+        
 
         
         plt.show()
