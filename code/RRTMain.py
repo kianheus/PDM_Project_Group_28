@@ -29,7 +29,7 @@ from matplotlib import patches
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     state, obstacles = env.reset() #start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
@@ -46,8 +46,11 @@ def main():
     collision_resolution = 0.05
     
     # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    mujoco_sim(env, points)
+    # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    # mujoco_sim(env, points)
+
+    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+
 
     
 # Kian, Thomas
@@ -93,6 +96,40 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     plt.show()
 
     return points
+
+
+def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, collision_resolution):
+    # Set up a environment map object (used for collisions and random point generation)
+    env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
+
+    # Define start and end poses
+    initial_pose = RRT.pose_deg(0.0, 0.0, 0)
+    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+
+    # Initialise a RR tree
+    tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
+    
+    # Grow the tree
+    tree.grow_blind(trange(10000), 1*60)
+
+    tree.print()
+
+    fig, ax = plt.subplots()
+    env_map.plot(ax)    # plot the environment (obstacles)
+
+    # plot the edges of the tree
+    for edge in tree.edges:
+        edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+
+    # plot the start and endpoints
+    steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
+    steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+
+    ax.set_xlim(-4, 4)
+    ax.set_ylim(-4, 4)
+    plt.axis("equal")
+
+    plt.show()
 
 
 # Paula

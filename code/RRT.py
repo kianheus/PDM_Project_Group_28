@@ -111,6 +111,10 @@ class Tree():
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
 
+    def print(self):
+        print(f"Tree:")
+        print(f"{len(self.nodes)} nodes")
+        print(f"{len(self.edges)} edges")
 
     '''
     Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
@@ -155,6 +159,16 @@ class Tree():
                     break
             added_node = self.grow_single()
         return done
+
+    def grow_blind(self, iter = range(100), max_seconds = 180):
+        close_time=time.time() + max_seconds
+        for i in iter:
+            if time.time()>close_time:
+                print("Time limit met, stopping.")
+                break
+            self.grow_single()
+        return
+
 
     '''
     Finds a path from the origin to the given end pose.
