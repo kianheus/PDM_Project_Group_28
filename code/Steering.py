@@ -5,7 +5,6 @@ import time
 import itertools
 from collections.abc import Iterable
 import pygame
-import RRT
 
 # Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
 def rot(theta) -> np.ndarray:
@@ -54,8 +53,8 @@ class Line(Segment):
     def plot_pygame(self, workspace, workspace_size, color):
         # Transform points from Mujoco ref frame (origin at workspace center)
         # to pygame ref frame (origin at top left corner)
-        point_start_pg = RRT.to_pygame_coords(self.point_start, workspace_size) 
-        point_end_pg = RRT.to_pygame_coords(self.point_end, workspace_size) 
+        point_start_pg = to_pygame_coords(self.point_start, workspace_size) 
+        point_end_pg = to_pygame_coords(self.point_end, workspace_size) 
         
         pygame.draw.line(workspace, color, point_start_pg, point_end_pg)
 
@@ -142,10 +141,10 @@ class Arc(Segment):
             ang_s, ang_e = ang_e, ang_s
             
         
-        center_pg = RRT.to_pygame_coords(self.center, workspace_size)
+        center_pg = to_pygame_coords(self.center, workspace_size)
         
-        rect_left = center_pg[0] - radius  
-        rect_top = center_pg[1] - radius
+        rect_left = center_pg[0] - self.radius  
+        rect_top = center_pg[1] - self.radius
         rect_width = self.radius*2
         rect_height = self.radius*2
 
@@ -375,6 +374,30 @@ def plot_point(ax, P, theta, length=0.1, **kwargs):
     kwargs.pop("s", None)
     ax.plot(P[0] + [0, np.cos(theta)*length], P[1] + [0, np.sin(theta)*length], **kwargs)
 
+def to_pygame_coords(point, window_size):
+    
+    """
+    This function coverts the given point coordinates which are given with 
+    respect to the center of the window to the reference frame used in pygame.
+    This pygame reference frame has its origin in the top left edge of the window
+    """
+    x_offset = window_size[0]/2
+    y_offset = window_size[1]/2
+    
+    x = point[0]
+    y = point[1]
+    
+    if y > 0:
+        y_new = y_offset - y
+    else:
+        y_new = y_offset + abs(y)
+
+    if x > 0:
+        x_new = x_offset + x
+    else:
+        x_new = x_offset - abs(x)
+    new_point = [x_new, y_new]
+    return new_point
 
 ### Some main functions for testing
 
