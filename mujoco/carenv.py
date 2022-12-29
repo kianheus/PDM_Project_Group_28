@@ -77,7 +77,8 @@ class Car(core.Env):
                         np.hstack(([self.data.body('wallhall5').xpos[0:2], self.quat_to_degree(self.data.body('wallhall5').xquat), self.model.geom('wallhall5').size[0:2]])),
                         np.hstack(([self.data.body('wallhall6').xpos[0:2], self.quat_to_degree(self.data.body('wallhall6').xquat), self.model.geom('wallhall6').size[0:2]])),
                         np.hstack(([self.data.body('wallhall7').xpos[0:2], self.quat_to_degree(self.data.body('wallhall7').xquat), self.model.geom('wallhall7').size[0:2]])),
-                        np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]]))])
+                        np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]])),
+                        np.hstack(([self.data.body('hospitalbed1').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed1').xquat), self.model.geom('hospitalbed1').size[0:2]]))])
 
         return obs
 

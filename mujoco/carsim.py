@@ -56,7 +56,7 @@ while True:
     theta = state[2]
     theta_error = ((thetar-theta+np.pi) % (2*np.pi)) - np.pi #multiple rotations without sudden gap between 0 and 2pi   
     
-    print(theta_error)
+    #print(obstacles)
     #longitudal + lateral
     p = np.array([state[0], state[1]]) 
     distance = np.linalg.norm(pr - p) #total distance 
