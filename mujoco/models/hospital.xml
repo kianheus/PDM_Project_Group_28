@@ -11,7 +11,7 @@
         		rgb2="0.2 0.2 0.9" markrgb="0.8 0.8 0.8" width="300" height="300"/>"true"/>
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="2 2"
         		reflectance="0.1"/>
-    <mesh name="hospitalbed" file="hospitalbed.STL" scale="0.01 0.01 0.01"/>
+    <mesh name="hospitalbed" file="hospitalbed.stl" scale="0.01 0.01 0.01"/>
   </asset>
   <visual>
     <quality shadowsize = "6000"/>
