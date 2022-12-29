@@ -29,7 +29,7 @@ from matplotlib import patches
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=False)
+    env = carenv.Car(render=True)
     state, obstacles = env.reset() #start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
@@ -47,7 +47,7 @@ def main():
     
     # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
     points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    # mujoco_sim(env, points)
+    mujoco_sim(env, points)
 
     
 # Kian, Thomas
@@ -119,10 +119,7 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
 
 
 # Fabio                
-def mujoco_sim(env, points):
-    
-    points = np.flipud(points)
-    
+def mujoco_sim(env, points):  
     
     #function used to bound output of controllers
     def bound(low, high, value):
@@ -160,7 +157,6 @@ def mujoco_sim(env, points):
     longitudal_pid = PIDcontroller(15, 0, 3)
 
     state, obstacles = env.reset() #start with reset
-    print(obstacles)
     starttime = time.time()
     i = 0
     n = 0
