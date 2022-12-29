@@ -42,7 +42,6 @@ def main():
     goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
     
     #Computational variables
-    n_line_segments = 100
     radius = 0.5
     collision_resolution = 0.05
     
