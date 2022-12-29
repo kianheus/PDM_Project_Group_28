@@ -54,20 +54,23 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(7.0, 1.1, 0)
+    final_pose = RRT.pose_deg(7.0, 2.0, 90)
 
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
     done = False
     close_time=time.time() + 30
+    added_node = True
     for i in trange(500):
         if time.time()>close_time:
             print("Time limit met, stopping.")
             break
-        tree.grow_single()
-        done = tree.add_path_to(final_pose, modify_angle=False) # Thomas, you idiot. We only need to check the newest node.
-        if done:
-            print("Found a path.")
-            break
+        if added_node:
+            done = tree.connect_to_newest_node(final_pose)
+            if done:
+                print("Found a path.")
+                break
+        added_node = tree.grow_single()
+        
 
     
     
@@ -95,7 +98,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
                 print(f"{points.shape=}")
                 print(f"{path.interpolate_angles_2(d=0.05).shape=}")
 
-                points = np.vstack((points, path.interpolate_angles_2(d=0.05)))
+                points = np.vstack((points, np.flipud(path.interpolate_angles_2(d=0.05))))
             node = node.parent_node
         points = points[1:,:]
         print(f"{points=}")
