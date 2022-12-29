@@ -8,8 +8,6 @@ class Car(core.Env):
 
     def __init__(self, render = True):
 
-
-
         self.model = mujoco.MjModel.from_xml_path('../mujoco/models/hospital.xml')
 
         self.data = mujoco.MjData(self.model)

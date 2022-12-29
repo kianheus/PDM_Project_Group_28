@@ -128,7 +128,21 @@ class Tree():
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
     def grow_single(self):
-        self.add_path_to(self.map.random_pose())
+        return self.add_path_to(self.map.random_pose())
+
+
+    def connect_to_newest_node(self, new_pose : np.ndarray):
+        path = steer.optimal_path(self.node_poses[-1], new_pose, self.turning_radius)
+        discrete_path = path.interpolate(d=self.collision_resolution)
+        collision = self.map.collision_check(discrete_path)
+        if collision:
+            return False
+        # add path to tree
+        if len(self.edges) > 0:
+            self.add_node(self.edges[-1].end_node, path)
+        else:
+            self.add_node(self.base_node, path)
+        return True
 
 
     '''
