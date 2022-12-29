@@ -161,27 +161,28 @@ class Tree():
                 new_pose[2] = angle
             potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
 
-        shortest_path_idx = np.argmin([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+        shortest_path_idxs = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
-        steering_path = potential_steering_paths[shortest_path_idx]
-        parent_coord_idx = valid_indices[shortest_path_idx]
+        for i, shortest_path_idx in enumerate(shortest_path_idxs):
+            if i > 4:
+                break
 
-        discrete_path = steering_path.interpolate(d=self.collision_resolution)
+            steering_path = potential_steering_paths[shortest_path_idx]
+            parent_coord_idx = valid_indices[shortest_path_idx]
 
-        collision = self.map.collision_check(discrete_path)
-        if collision:
-            return False
+            discrete_path = steering_path.interpolate(d=self.collision_resolution)
 
-        # print(f"{parent_coord_idx=}")
-        # print(f"{len(self.edges)=}")
-        # print(f"{self.node_poses.shape=}")
-        if parent_coord_idx == 0:
-            self.add_node(self.base_node, steering_path)
-        else:
-            self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
+            collision = self.map.collision_check(discrete_path)
+            if collision:
+                continue
 
-        return True
+            if parent_coord_idx == 0:
+                self.add_node(self.base_node, steering_path)
+            else:
+                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
 
+            return True
+        return False
 
 
 
@@ -290,7 +291,7 @@ n_line_segments = 100
 
 # [x, y, rotation, length, width]
 # obstacles = np.array([[0, 0, 0, 1, 1.5], [-3, -3, 0, 1, 0.5]])
-turning_radius = 2.0
+turning_radius = 0.5
 collision_resolution = 0.1
 
 
@@ -348,14 +349,19 @@ if user == "thomas":
     env_map = Map(obstacles, 0.1)
 
     initial_pose = pose_deg(0.0, 0.0, 0)
-    final_pose = pose_deg(0.0, 0.0, 180)
+    final_pose = pose_deg(2.0, -4.0, 180)
 
     tree = Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=0.05)
     done = False
-    for i in trange(500):
+    close_time=time.time() + 180
+    for i in trange(1000):
+        if time.time()>close_time:
+            print("Time limit met, stopping.")
+            break
         tree.grow_single()
         done = tree.add_path_to(final_pose, modify_angle=False)
         if done:
+            print("Found a path.")
             break
 
     
