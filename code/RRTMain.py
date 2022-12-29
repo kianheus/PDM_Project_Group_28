@@ -29,7 +29,7 @@ from matplotlib import patches
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     state, obstacles = env.reset() #start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
@@ -47,7 +47,7 @@ def main():
     
     # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
     points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    mujoco_sim(env, points)
+    # mujoco_sim(env, points)
         
     
 # Kian, Thomas
@@ -55,26 +55,12 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(7.0, 2.0, 90)
+    final_pose = RRT.pose_deg(5.0, 3.0, -90)
 
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
-    done = False
-    close_time=time.time() + 30
-    added_node = True
-    for i in trange(500):
-        if time.time()>close_time:
-            print("Time limit met, stopping.")
-            break
-        if added_node:
-            done = tree.connect_to_newest_node(final_pose)
-            if done:
-                print("Found a path.")
-                break
-        added_node = tree.grow_single()
-        
+    
+    done = tree.grow_to(final_pose, trange(2000), 180)
 
-    
-    
     fig, ax = plt.subplots()
     env_map.plot(ax)
 
@@ -85,28 +71,11 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
     points = np.array([[0.0, 0.0, 0.0]])
     if done:
-        print("Done!")
-        node = tree.edges[-1].end_node
-        print(f"distance = {node.distance_from_origin:.02f}")
-        dist = 0
-        while node is not None:
-            # edge.path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0)
-            # steer.plot_point(ax, node.pose[:2], node.pose[2], color="orange")
-            if node.parent_edge is not None:
-                path : steer.Path = node.parent_edge.path
-                dist += path.length
-                path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-                print(f"{points.shape=}")
-                print(f"{path.interpolate_angles_2(d=0.05).shape=}")
-
-                points = np.vstack((points, np.flipud(path.interpolate_angles_2(d=0.05))))
-            node = node.parent_node
-        points = points[1:,:]
-        print(f"{points=}")
-
-        print(f"distance = {dist:.02f}")
-
-        plt.scatter(points[:,0], points[:,1])
+        path = tree.path_to(final_pose)
+        path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+        path.print()
+        points = path.interpolate_angles_2(d=0.05)
+        plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
         
 
     steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
@@ -146,10 +115,12 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
                 if event.key==pygame.K_q:
                     pygame.quit()
                     exit()
-                    
+
+
+
+# Fabio                
 def mujoco_sim(env, points):
     
-    points = np.flipud(points)
     print(points.shape)
     
     #function used to bound output of controllers

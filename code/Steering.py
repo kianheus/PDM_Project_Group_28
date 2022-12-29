@@ -138,9 +138,10 @@ class Arc(Segment):
 ### Classes defining a path, which is just a collection of segments
 
 class Path():
-    def __init__(self):
+    def __init__(self, segments=None):
         self.length = 0
-        # print("Path.__init__()")
+        if segments is not None:
+            self.segments = segments
         for segment in self.segments:
             self.length += segment.length
 
@@ -148,8 +149,10 @@ class Path():
         if len(self.segments) == 0:
             print("Empty Path")
         else:
+            print(f"start position = {self.segments[0].point_start}")
             for segment in self.segments:
-                print(f"distance = {segment.length:.04}, curve = {segment.curvature:.04}")
+                print(f"distance     = {segment.length:.04}, curve = {segment.curvature:.04}")
+            print(f"end position = {self.segments[-1].point_end}")
             print(f"Total = {self.length}")
 
     def plot(self, ax, endpoint=False, **kwargs):

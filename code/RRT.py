@@ -8,6 +8,7 @@ import Steering as steer
 from tqdm import tqdm, trange
 from matplotlib import pyplot as plt
 from matplotlib import patches
+import time
 
 # -----------------------------------------------------------------------------
 # Define class that executes the RRT algorithm
@@ -104,6 +105,7 @@ class Tree():
         self.map = map
         self.base_node = Node(initial_pose)
         self.edges : list[Edge] = []
+        self.nodes : list[Node] = [self.base_node]
         self.node_poses = np.array([initial_pose])
         self.node_distances = np.array([0])
         self.turning_radius = turning_radius
@@ -122,6 +124,7 @@ class Tree():
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
             self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
             node = new_edge.end_node
+            self.nodes.append(node)
         # print("Added new node")
 
     '''
@@ -130,6 +133,53 @@ class Tree():
     def grow_single(self):
         return self.add_path_to(self.map.random_pose())
 
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180):
+        close_time=time.time() + max_seconds
+        added_node = True
+        done = False
+        for i in iter:
+            if time.time()>close_time:
+                print("Time limit met, stopping.")
+                break
+            if added_node:
+                done = self.connect_to_newest_node(end_pose)
+                if done:
+                    print("Found a path.")
+                    break
+            added_node = self.grow_single()
+        return done
+
+    def path_to(self, end_pose):
+        segments = []
+        node = self.get_node(end_pose)
+
+        if node is None:
+            return None  # No path to end_pose found
+        
+        while node is not None:
+            if node.parent_edge is not None:
+                path : steer.Path = node.parent_edge.path
+                segments.extend(path.segments)
+            node = node.parent_node
+
+        segments.reverse()
+        path = steer.Path(segments)
+        return path
+    
+    def get_node(self, pose):
+        offset = self.node_poses - pose
+        offset[:,2] += np.pi
+        offset[:,2] %= 2 * np.pi
+        offset[:,2] -= np.pi
+        offset[:,2] /= 10
+        distances = np.linalg.norm(offset, axis=1)
+        idx_closest = np.argmin(distances)
+        if distances[idx_closest] > 1e-4:
+            print(f"No matching node found. Closest node at {distances[idx_closest]}.")
+            print(f"{distances=}")
+            print(f"{offset=}")
+            return None
+        return self.nodes[idx_closest]
 
     def connect_to_newest_node(self, new_pose : np.ndarray):
         path = steer.optimal_path(self.node_poses[-1], new_pose, self.turning_radius)
