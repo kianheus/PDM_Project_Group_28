@@ -275,6 +275,31 @@ class Tree():
 
             return True
         return False
+    
+"""
+This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
+radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
+nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
+"""    
+    
+    def rewire(self, current_pose, near_node_idx):
+        distances = []
+        for i in near_node_idx:
+            near_node = self.nodes[i]
+            near_pose = self.node_poses[i]
+            near_path = steer.optimal_path(near_pose, current_pose, self.turning_radius)
+            discrete_near_path = path.interpolate(d=self.collision_resolution)
+            
+            near_edge = Edge(near_node, near_path)
+            # near_path_distance = # Here calcualte the distance in Dubin's space of the 
+            collision = self.map.collision_check(discrete_near_path)
+        
+            if collision == False:
+                
+        
+        
+        #print(f"{near_pose=}")            
+        pass
 
 
 # -----------------------------------------------------------------------------
