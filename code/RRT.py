@@ -85,7 +85,8 @@ class Map():
         return new_xy
 
     def random_pose(self) -> np.ndarray:
-        new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
+        # new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
+        new_theta = np.random.uniform(low=-np.pi, high=np.pi)
         return np.hstack((self.random_position(), new_theta))
 
     def plot(self, ax : plt.Axes):
