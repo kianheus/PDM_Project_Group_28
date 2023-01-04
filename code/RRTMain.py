@@ -29,8 +29,8 @@ from matplotlib import patches
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
-    state, obstacles = env.reset() #start with reset
+    env = carenv.Car(render=False)
+    state, obstacles = env.reset() # start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
     start_time = time.time()
@@ -41,15 +41,15 @@ def main():
     start_coord = state # Starting position and orientation of robot (x, y, theta)
     goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
     
-    #Computational variables
-    radius = 1.2
+    # Computational variables
+    radius = 0.8
     collision_resolution = 0.05
     
-    # test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
+    #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
     points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    mujoco_sim(env, points)
+    #mujoco_sim(env, points)
 
-    # test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
 
     
@@ -61,13 +61,14 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+    final_pose = RRT.pose_deg(-3, 7, 0)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(2000), 180)
+    done = tree.grow_to(final_pose, trange(1000), 180)
+    #tree.rewire(final_pose))
 
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
@@ -239,7 +240,7 @@ def mujoco_sim(env, points):
         
         ########################## sim ##########################
         action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
-        state, obstacles = env.step(action) #set step in environment
+        state, obstacles, moving_obstacles = env.step(action) #set step in environment
         env.render(mode = True) # turn rendering on or off
 
         ########################## reset after 10 seconds, this can be changed ##########################   

@@ -12,6 +12,10 @@ class Car(core.Env):
 
         self.data = mujoco.MjData(self.model)
         
+        self.counter = 0
+        
+        self.bedspeed = 1
+        
         if render == True:   
             self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
 
@@ -27,22 +31,35 @@ class Car(core.Env):
         data = self.get_sensor_data()
         obstacles = self.get_obstacles_simple()
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
+        
+        self.counter = 0   
+        self.bedspeed = 1
 
         return state, obstacles
 
     def step(self, action):
+        
         self.data.ctrl[0] = action[0]
         self.data.ctrl[1] = action[1]
-
+        
+        if self.counter % 2000 == 0:
+            self.bedspeed = self.bedspeed*-1
+        
+        self.data.ctrl[2] = self.bedspeed
+        
         mujoco.mj_step(self.model, self.data)
 
         data = self.get_sensor_data()
 
         obstacles = self.get_obstacles_simple()
+        
+        moving_obstacles = self.get_moving_obstacle()
 
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
 
-        return state, obstacles
+        self.counter = self.counter + 1
+
+        return state, obstacles, moving_obstacles
 
     def render(self, mode):
         self.viewer.render()
@@ -90,7 +107,11 @@ class Car(core.Env):
                         np.hstack(([self.data.body('hospitalbed12').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed12').xquat), np.array([1,0.5])]))])
 
         return obs
-
+    
+    def get_moving_obstacle(self): 
+        obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
+        return obs
+    
     def get_time(self):
         time = self.data.time
         return time
