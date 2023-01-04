@@ -67,7 +67,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(1000), 180)
+    done = tree.grow_to(final_pose, trange(50), 180, star = True, informed = False)
     #tree.rewire(final_pose))
 
     fig, ax = plt.subplots()

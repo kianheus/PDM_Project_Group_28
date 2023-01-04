@@ -30,10 +30,13 @@ class Node():
     def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
         self.pose = pose
         self.parent_node = parent_node
+        self.children_nodes : list[Node] = []
         self.parent_edge = parent_edge
+        self.distance_from_parent = distance_from_parent
         self.distance_from_origin = distance_from_parent
         if parent_node is not None:
             # print(f"{parent_node=}")
+            parent_node.children_nodes.append(self)
             self.distance_from_origin += parent_node.distance_from_origin
 
 
@@ -119,7 +122,7 @@ class Tree():
     '''
     Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
     '''
-    def add_node(self, start_node : Node, path : steer.Path):
+    def add_node(self, start_node : Node, path : steer.Path, neighbour_idx = None):
         node = start_node
         for segment in path.segments:
             path_new = steer.PathSimple(segment)
@@ -128,7 +131,10 @@ class Tree():
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
             self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
             node = new_edge.end_node
-            self.nodes.append(node)
+            if neighbour_idx == None:
+                self.nodes.append(node)
+            else:
+                self.nodes.insert(neighbour_idx, node)
         # print("Added new node")
 
     '''
@@ -144,20 +150,24 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, informed = False):
         close_time=time.time() + max_seconds
         added_node = True
         done = False
+        neighbouring_node_ids = np.array([])
         for i in iter:
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
             if added_node:
                 done = self.connect_to_newest_node(end_pose)
-                if done:
-                    print("Found a path.")
-                    break
-            added_node = self.grow_single()
+                if neighbouring_node_ids.shape[0] > 0:
+                    self.rewire(neighbouring_node_ids)
+                #if done:
+                #    print("Found a path.")
+                #    break
+            added_node, neighbouring_node_ids = self.grow_single()
+
         return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
@@ -235,12 +245,8 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
-        distances = np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1) + self.node_distances
-        closest_distance = np.min(distances)
-        upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
-        valid_indices = distances <= upper_bound
-        valid_indices = np.arange(len(valid_indices))[valid_indices]
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, neighbour_idx = None) -> bool: #AND A np.ndarray:
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10]
 
         potential_steering_paths : list[steer.Path] = []
         angle_random = new_pose[2]
@@ -252,12 +258,9 @@ class Tree():
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
             potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
-
-        shortest_path_idxs = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+        shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
-        for i, shortest_path_idx in enumerate(shortest_path_idxs):
-            if i > 4:
-                break
+        for i, shortest_path_idx in enumerate(shortest_path_ids):
 
             steering_path = potential_steering_paths[shortest_path_idx]
             parent_coord_idx = valid_indices[shortest_path_idx]
@@ -269,19 +272,41 @@ class Tree():
                 continue
 
             if parent_coord_idx == 0:
-                self.add_node(self.base_node, steering_path)
+                self.add_node(self.base_node, steering_path, neighbour_idx)
             else:
-                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
+                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path, neighbour_idx)
 
-            return True
-        return False
-    
-"""
-This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
-radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
-nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
-"""    
-    
+            return True, valid_indices
+        return False, valid_indices 
+    """
+    This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
+    radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
+    nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
+    """
+    def rewire(self, neighbouring_node_ids):
+        for idx in neighbouring_node_ids:
+            neighbouring_node = self.nodes.pop(idx)
+            # Remove all edges which have neighbouring_node as self.end_node
+            neighbouring_pose = self.node_poses[idx]
+            self.node_poses = np.delete(self.node_poses, idx, axis=0)
+            _, __ = self.add_path_to(neighbouring_pose, True, idx)
+            new_neighbour = self.nodes[idx]
+            new_neighbour.children_nodes = neighbouring_node.children_nodes
+            print(len(neighbouring_node.children_nodes))
+            for child in neighbouring_node.children_nodes:
+                print("children heights are being measured")
+                self.distance_update(neighbouring_node, child)
+
+
+    def distance_update(self, parent : Node, child : Node):
+        child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
+        if child.children_nodes:
+            for grandchild in child.children_nodes:
+                print(grandchild.pose)
+                self.distance_update(child, grandchild) 
+
+        pass
+    """
     def rewire(self, current_pose, near_node_idx):
         distances = []
         for i in near_node_idx:
@@ -295,12 +320,9 @@ nodes and it connects the current node to the nearby node that is nearest (in Du
             collision = self.map.collision_check(discrete_near_path)
         
             if collision == False:
-                
-        
-        
-        #print(f"{near_pose=}")            
-        pass
-
+                #print(f"{near_pose=}")            
+                pass
+    """
 
 # -----------------------------------------------------------------------------
 # Define class that visualizes the RRT algorithm and final path
