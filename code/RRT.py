@@ -286,15 +286,14 @@ class Tree():
     def rewire(self, neighbouring_node_ids):
         for idx in neighbouring_node_ids:
             neighbouring_node = self.nodes.pop(idx)
-            # Remove all edges which have neighbouring_node as self.end_node
+            # TODO: Remove all edges which have neighbouring_node as self.end_node
+
             neighbouring_pose = self.node_poses[idx]
             self.node_poses = np.delete(self.node_poses, idx, axis=0)
             _, __ = self.add_path_to(neighbouring_pose, True, idx)
             new_neighbour = self.nodes[idx]
             new_neighbour.children_nodes = neighbouring_node.children_nodes
-            print(len(neighbouring_node.children_nodes))
             for child in neighbouring_node.children_nodes:
-                print("children heights are being measured")
                 self.distance_update(neighbouring_node, child)
 
 
@@ -306,23 +305,6 @@ class Tree():
                 self.distance_update(child, grandchild) 
 
         pass
-    """
-    def rewire(self, current_pose, near_node_idx):
-        distances = []
-        for i in near_node_idx:
-            near_node = self.nodes[i]
-            near_pose = self.node_poses[i]
-            near_path = steer.optimal_path(near_pose, current_pose, self.turning_radius)
-            discrete_near_path = path.interpolate(d=self.collision_resolution)
-            
-            near_edge = Edge(near_node, near_path)
-            # near_path_distance = # Here calcualte the distance in Dubin's space of the 
-            collision = self.map.collision_check(discrete_near_path)
-        
-            if collision == False:
-                #print(f"{near_pose=}")            
-                pass
-    """
 
 # -----------------------------------------------------------------------------
 # Define class that visualizes the RRT algorithm and final path
