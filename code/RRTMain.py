@@ -240,7 +240,7 @@ def mujoco_sim(env, points):
         
         ########################## sim ##########################
         action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
-        state, obstacles = env.step(action) #set step in environment
+        state, obstacles, moving_obstacles = env.step(action) #set step in environment
         env.render(mode = True) # turn rendering on or off
 
         ########################## reset after 10 seconds, this can be changed ##########################   
