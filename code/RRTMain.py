@@ -21,6 +21,8 @@ from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 
+import Approximator
+
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -46,10 +48,12 @@ def main():
     collision_resolution = 0.05
     
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
     #mujoco_sim(env, points)
 
     #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+
+    test_approximator(obstacles, workspace_center, workspace_size, radius)
 
 
     
@@ -131,6 +135,29 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     plt.axis("equal")
 
     plt.show()
+
+
+
+def test_approximator(obstacles, workspace_center, workspace_size, turning_radius):
+    print("Testing approximator")
+    DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
+
+    env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
+
+    start_pose = env_map.random_pose()
+    end_pose = env_map.random_pose()
+
+    # Options for the interpolation are:
+    # Approximator.InterpolationType.Interpolated (interpolates value, should be pretty good most of the time)
+    # Approximator.InterpolationType.Nearest (looks up nearest value, should be a bit worse than interpolate, but might handle discontinuities better)
+    # Approximator.InterpolationType.UpperBound (should always be bigger or equal to the true value, not implemented yet)
+    dist_approximated = DA.lookup(start_pose, end_pose, Approximator.InterpolationType.Nearest)
+    dist_true = steer.optimal_path(start_pose, end_pose, turning_radius).length
+
+    print(f"{dist_true=}")
+    print(f"{dist_approximated=}")
+
+
 
 
 # Paula

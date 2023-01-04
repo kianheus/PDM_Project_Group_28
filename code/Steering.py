@@ -10,6 +10,34 @@ import pygame
 def rot(theta) -> np.ndarray:
     return np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 0.0]])
 
+
+
+# Generate a pose at position (x, y) and at an angle t in degrees
+def pose_deg(x, y, t):
+    return np.array([x, y, np.deg2rad(t)])
+
+
+def transform(start_pose, end_pose):
+    # start_position = start_pose.copy()
+    # start_position[2] = 1
+    end_position = end_pose.copy()
+    end_position[2] = 1
+
+    theta = start_pose[2]
+
+    transformation = np.array([[np.cos(theta), -np.sin(theta), start_pose[0]],[np.sin(theta), np.cos(theta), start_pose[1]],[0, 0, 1]])
+
+    # start_position_t = np.linalg.inv(transformation) @ start_position
+    end_position_t = np.linalg.inv(transformation) @ end_position
+
+    # start_pose_t = start_position_t
+    # start_pose_t[2] = (start_pose[2] - theta) % (2 * np.pi)
+    end_pose_t = end_position_t
+    end_pose_t[2] = (end_pose[2] - theta) % (2 * np.pi)
+    
+    return end_pose_t
+
+
 ### Classes defining individual segments, which can be lines or arcs
 
 class Segment():
