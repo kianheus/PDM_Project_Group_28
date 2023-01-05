@@ -279,19 +279,21 @@ def mujoco_sim(env, points):
             env.close_window()
             break
         
-        if n % 10 == 0:
+        if n % 4 == 0:
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
             
-        if n % 50 == 0:
-            local_planner(state, obstacles, moving_obstacles, points)
-        
+        if n % 30 == 0:
+            points2, reroute = local_planner(state, obstacles, moving_obstacles, points, i)
+            if reroute == True:
+                points = points2
+                i = 0
         n = n+1
         
         #time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
 
-def local_planner(state, obstacles, moving_obstacles, points):
-
+def local_planner(state, obstacles, moving_obstacles, points, i):
+    reroute = False
     offset = 20 #20 # amount of points offsetted from moving obstacle   
 
     # needed to create map
@@ -299,18 +301,17 @@ def local_planner(state, obstacles, moving_obstacles, points):
     #workspace_center = np.array([0, 0]) # Coordinate center of workspace
     workspace_size = np.array([15, 15]) # Dimensions of workspace
     
-    workspace_limit_pos = workspace_size/2+workspace_center
-    workspace_limit_min = -workspace_size/2+workspace_center
-    
     # convert to right sizes
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
     moving_obstacles[:,3:] = moving_obstacles[:,3:]*2 # [x, y, rotation, length, width]
     
     # can also use only moving obstacles, but now did everyhting if we want to plan later
-    env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size)
-    #env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
+    #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
+    env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
     
-    # check for collisions
+    # check for 
+    
+    points = points[i:]
     collision = env_map.collision_check_array(points)
     index = np.argwhere(collision == True)
     
@@ -321,16 +322,23 @@ def local_planner(state, obstacles, moving_obstacles, points):
         mask[index] = False
         points = np.squeeze(points[mask,:])
         start = state
-        goal = np.array([bound(workspace_limit_min[0], workspace_limit_pos[0], points[np.min(index)][0]),
-                         bound(workspace_limit_min[1], workspace_limit_pos[1], points[np.min(index)][1]),
-                         points[np.min(index)][2]])
+        future_points = points[np.min(index):]
+        #goal = points[np.min(index)]
+        goal = future_points[0]
+        
+        # needed to create map
+        workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
+        #workspace_center = np.array([0, 0]) # Coordinate center of workspace
+        workspace_size = np.array([start[0]+goal[0]+0.1, 3]) # Dimensions of workspace
+        
+        workspace_limit = workspace_size/2+workspace_center
+        
+        env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
+        
         #miniRRT(state, obstacles, moving_obstacles, start, goal)
+    
         
-        print(start)
-        print(goal)
-        print(workspace_limit_pos)
-        
-        if np.all(goal[:2] < workspace_limit_pos):
+        if np.linalg.norm(start - goal) < 6:
             print("collision within range")
             turning_radius = 0.8
             collision_resolution = 0.05
@@ -343,26 +351,30 @@ def local_planner(state, obstacles, moving_obstacles, points):
             
             fig, ax = plt.subplots()
             env_map.plot(ax)    # plot the environment (obstacles)   
-            ax.set_xlim(-workspace_size[0] + workspace_center[0], workspace_size[1] + workspace_center[0])
-            ax.set_ylim(-workspace_size[0] + workspace_center[1], workspace_size[1] + workspace_center[1])
-            ax.scatter(workspace_center[0], workspace_center[1])
-            ax.scatter(goal[0], goal[1])
+            ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+            ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+            #ax.scatter(goal[0], goal[1])
             
             if done:
                 path = tree.path_to(goal)
-                path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-                path.print()
-                points = path.interpolate_poses(d=0.05)
-                plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+                #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+                #path.print()
+                updated_points = path.interpolate_poses(d=0.05)
+                #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             
             
-            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             #ax.axis("equal")
-            plt.show()
-        
+            #plt.show()
+            points = np.vstack([updated_points, future_points])
+            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            #ax.scatter(final_path[:,0], final_path[:,1], c=range(final_path.shape[0]), cmap='viridis')
+            reroute = True
         
     else:
         print("follow normal path")
+    
+    return points, reroute 
     
     
 def miniRRT(state, obstacles, moving_obstacles, start, goal):  
