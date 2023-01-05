@@ -30,12 +30,13 @@ class Car(core.Env):
         #extract car and world data
         data = self.get_sensor_data()
         obstacles = self.get_obstacles_simple()
+        moving_obstacles = self.get_moving_obstacle()
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
         
         self.counter = 0   
         self.bedspeed = 1
 
-        return state, obstacles
+        return state, obstacles, moving_obstacles
 
     def step(self, action):
         

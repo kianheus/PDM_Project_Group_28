@@ -76,6 +76,16 @@ class Map():
                 and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
                 return True
         return False
+    
+    def collision_check_array(self, points : np.ndarray) -> bool:
+        points = np.atleast_2d(points)
+        check_array = np.zeros((points.shape[0],), dtype=bool)
+        for index, point in enumerate(points):
+            for obstacle in self.obstacles:
+                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
+                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
+                    check_array[index] = 1
+        return check_array
 
     def random_position(self) -> np.ndarray:
         collision = True
@@ -282,7 +292,7 @@ This function takes in the current pose and a list of indeces corresponding to a
 radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
 nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
 """    
-    
+"""   
     def rewire(self, current_pose, near_node_idx):
         distances = []
         for i in near_node_idx:
@@ -302,7 +312,7 @@ nodes and it connects the current node to the nearby node that is nearest (in Du
         #print(f"{near_pose=}")            
         pass
 
-
+""" 
 # -----------------------------------------------------------------------------
 # Define class that visualizes the RRT algorithm and final path
 # -----------------------------------------------------------------------------

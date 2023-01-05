@@ -31,8 +31,8 @@ import Approximator
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=False)
-    state, obstacles = env.reset() # start with reset
+    env = carenv.Car(render=True)
+    state, obstacles, moving_obstacles = env.reset() # start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
     start_time = time.time()
@@ -48,12 +48,12 @@ def main():
     collision_resolution = 0.05
     
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    #mujoco_sim(env, points)
+    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    mujoco_sim(env, points)
 
     #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
-    test_approximator(obstacles, workspace_center, workspace_size, radius)
+    #test_approximator(obstacles, workspace_center, workspace_size, radius)
 
 
     
@@ -64,8 +64,8 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     # Define start and end poses
-    initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(-3, 7, 0)
+    initial_pose = RRT.pose_deg(0.5, 0.5, 0)
+    final_pose = RRT.pose_deg(9, 0.1, 0)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
@@ -118,7 +118,8 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     tree.grow_blind(trange(10000), 1*60)
 
     tree.print()
-
+    
+    """
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
 
@@ -135,7 +136,7 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     plt.axis("equal")
 
     plt.show()
-
+    """
 
 
 def test_approximator(obstacles, workspace_center, workspace_size, turning_radius):
@@ -188,12 +189,15 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
 
 
 
-# Fabio                
+# Fabio    
+
+def bound(low, high, value):
+     return max(low, min(high, value))
+            
 def mujoco_sim(env, points):  
     
     #function used to bound output of controllers
-    def bound(low, high, value):
-         return max(low, min(high, value))
+    
 
     #function for PID controller
     class PIDcontroller():
@@ -226,7 +230,7 @@ def mujoco_sim(env, points):
     lateral_pid = PIDcontroller(1, 0, 0)
     longitudal_pid = PIDcontroller(15, 0, 3)
 
-    state, obstacles = env.reset() #start with reset
+    state, obstacles, moving_obstacles = env.reset() #start with reset
     starttime = time.time()
     i = 0
     n = 0
@@ -275,15 +279,114 @@ def mujoco_sim(env, points):
             env.close_window()
             break
         
-        if n % 2 == 0:
+        if n % 10 == 0:
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
+            
+        if n % 50 == 0:
+            local_planner(state, obstacles, moving_obstacles, points)
         
         n = n+1
-        time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
+        
+        #time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
 
+def local_planner(state, obstacles, moving_obstacles, points):
 
+    offset = 20 #20 # amount of points offsetted from moving obstacle   
 
+    # needed to create map
+    workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
+    #workspace_center = np.array([0, 0]) # Coordinate center of workspace
+    workspace_size = np.array([15, 15]) # Dimensions of workspace
+    
+    workspace_limit_pos = workspace_size/2+workspace_center
+    workspace_limit_min = -workspace_size/2+workspace_center
+    
+    # convert to right sizes
+    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
+    moving_obstacles[:,3:] = moving_obstacles[:,3:]*2 # [x, y, rotation, length, width]
+    
+    # can also use only moving obstacles, but now did everyhting if we want to plan later
+    env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size)
+    #env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
+    
+    # check for collisions
+    collision = env_map.collision_check_array(points)
+    index = np.argwhere(collision == True)
+    
+    if index.size != 0: # do local planning
+        print("Possible collision")
+        index = np.arange(np.min(index)-offset, np.max(index)+offset, 1)
+        mask = np.ones(points.shape[0], bool)
+        mask[index] = False
+        points = np.squeeze(points[mask,:])
+        start = state
+        goal = np.array([bound(workspace_limit_min[0], workspace_limit_pos[0], points[np.min(index)][0]),
+                         bound(workspace_limit_min[1], workspace_limit_pos[1], points[np.min(index)][1]),
+                         points[np.min(index)][2]])
+        #miniRRT(state, obstacles, moving_obstacles, start, goal)
+        
+        print(start)
+        print(goal)
+        print(workspace_limit_pos)
+        
+        if np.all(goal[:2] < workspace_limit_pos):
+            print("collision within range")
+            turning_radius = 0.8
+            collision_resolution = 0.05
+        
+            # Initialise a RR tree
+            tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=start, collision_resolution=collision_resolution)
+        
+            # Grow the tree to the final pose
+            done = tree.grow_to(goal, trange(200), 180)
+            
+            fig, ax = plt.subplots()
+            env_map.plot(ax)    # plot the environment (obstacles)   
+            ax.set_xlim(-workspace_size[0] + workspace_center[0], workspace_size[1] + workspace_center[0])
+            ax.set_ylim(-workspace_size[0] + workspace_center[1], workspace_size[1] + workspace_center[1])
+            ax.scatter(workspace_center[0], workspace_center[1])
+            ax.scatter(goal[0], goal[1])
+            
+            if done:
+                path = tree.path_to(goal)
+                path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+                path.print()
+                points = path.interpolate_poses(d=0.05)
+                plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            
+            
+            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            #ax.axis("equal")
+            plt.show()
+        
+        
+    else:
+        print("follow normal path")
+    
+    
+def miniRRT(state, obstacles, moving_obstacles, start, goal):  
+
+    # needed to create map
+    workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
+    workspace_size = np.array([5, 5]) # Dimensions of workspace
+
+    # can also use only moving obstacles, but now did everyhting if we want to plan later
+    env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size)
+    #env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
+    
+    # plotting
+    
+    fig, ax = plt.subplots()
+    env_map.plot(ax)    # plot the environment (obstacles)   
+    ax.set_xlim(-workspace_size[0] + workspace_center[0], workspace_size[1] + workspace_center[0])
+    ax.set_ylim(-workspace_size[0] + workspace_center[1], workspace_size[1] + workspace_center[1])
+    ax.scatter(workspace_center[0], workspace_center[1])
+    #ax.axis("equal")
+    plt.show()
+    
+    
+    
 if __name__ == '__main__':
     main()
 
