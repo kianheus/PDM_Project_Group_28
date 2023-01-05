@@ -283,7 +283,7 @@ def mujoco_sim(env, points):
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
             
-        if n % 30 == 0:
+        if n % 10 == 0:
             points2, reroute = local_planner(state, obstacles, moving_obstacles, points, i)
             if reroute == True:
                 points = points2
@@ -325,21 +325,22 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
         future_points = points[np.min(index):]
         #goal = points[np.min(index)]
         goal = future_points[0]
-        
-        # needed to create map
-        workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
-        #workspace_center = np.array([0, 0]) # Coordinate center of workspace
-        workspace_size = np.array([start[0]+goal[0]+0.1, 3]) # Dimensions of workspace
-        
-        workspace_limit = workspace_size/2+workspace_center
-        
-        env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
-        
-        #miniRRT(state, obstacles, moving_obstacles, start, goal)
     
         
-        if np.linalg.norm(start - goal) < 6:
+        if np.linalg.norm(start - goal) < 7:
             print("collision within range")
+            
+            # needed to create map
+            workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
+            #workspace_center = np.array([0, 0]) # Coordinate center of workspace
+            workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace
+            
+            #workspace_limit = workspace_size/2+workspace_center
+            
+            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
+            
+            #miniRRT(state, obstacles, moving_obstacles, start, goal)
+            
             turning_radius = 0.8
             collision_resolution = 0.05
         
@@ -347,12 +348,12 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=start, collision_resolution=collision_resolution)
         
             # Grow the tree to the final pose
-            done = tree.grow_to(goal, trange(200), 180)
+            done = tree.grow_to(goal, trange(200), 0.25)
             
-            fig, ax = plt.subplots()
-            env_map.plot(ax)    # plot the environment (obstacles)   
-            ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
-            ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+            #fig, ax = plt.subplots()
+            #env_map.plot(ax)    # plot the environment (obstacles)   
+            #ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+            #ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
             #ax.scatter(goal[0], goal[1])
             
             if done:
@@ -360,16 +361,18 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
                 #path.print()
                 updated_points = path.interpolate_poses(d=0.05)
+                points = np.vstack([updated_points, future_points])
+                reroute = True
                 #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             
             
             #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             #ax.axis("equal")
             #plt.show()
-            points = np.vstack([updated_points, future_points])
-            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            
+            #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             #ax.scatter(final_path[:,0], final_path[:,1], c=range(final_path.shape[0]), cmap='viridis')
-            reroute = True
+            
         
     else:
         print("follow normal path")
