@@ -293,8 +293,8 @@ def mujoco_sim(env, points):
         #time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
 
 def local_planner(state, obstacles, moving_obstacles, points, i):
-    reroute = False
-    offset = 20 #20 # amount of points offsetted from moving obstacle   
+    reroute = False # used for resetting the index i
+    offset = 20 # amount of points offsetted from moving obstacle   
 
     # needed to create map
     workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
@@ -305,38 +305,41 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
     moving_obstacles[:,3:] = moving_obstacles[:,3:]*2 # [x, y, rotation, length, width]
     
-    # can also use only moving obstacles, but now did everyhting if we want to plan later
+    # only check if path collides with moving obstacles, because normal path is already collision free
     #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
     env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
     
-    # check for 
-    
+    # only check all future points for collisions
     points = points[i:]
     collision = env_map.collision_check_array(points)
     index = np.argwhere(collision == True)
     
-    if index.size != 0: # do local planning
+    # if there are collisions, do local planning
+    if index.size != 0: 
         print("Possible collision")
+        
+        # remove the points that collide, add offset, to see new future goal point
         index = np.arange(np.min(index)-offset, np.max(index)+offset, 1)
         mask = np.ones(points.shape[0], bool)
         mask[index] = False
         points = np.squeeze(points[mask,:])
         start = state
-        future_points = points[np.min(index):]
+        future_points = points[np.min(index):] # used for creating new path
         #goal = points[np.min(index)]
         goal = future_points[0]
     
-        
+        # check if distane between goal and state is within the lookahead distance
         if np.linalg.norm(start - goal) < 7:
             print("collision within range")
             
-            # needed to create map
+            # use smaller map to speed up RRT
             workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
             #workspace_center = np.array([0, 0]) # Coordinate center of workspace
             workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace
             
             #workspace_limit = workspace_size/2+workspace_center
             
+            # now use all obstacles
             env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
             
             #miniRRT(state, obstacles, moving_obstacles, start, goal)
@@ -360,9 +363,9 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 path = tree.path_to(goal)
                 #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
                 #path.print()
-                updated_points = path.interpolate_poses(d=0.05)
-                points = np.vstack([updated_points, future_points])
-                reroute = True
+                updated_points = path.interpolate_poses(d=0.05) # new path to goal
+                points = np.vstack([updated_points, future_points]) # combine new and old path
+                reroute = True # used to reset index
                 #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             
             
@@ -377,30 +380,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     else:
         print("follow normal path")
     
-    return points, reroute 
-    
-    
-def miniRRT(state, obstacles, moving_obstacles, start, goal):  
-
-    # needed to create map
-    workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
-    workspace_size = np.array([5, 5]) # Dimensions of workspace
-
-    # can also use only moving obstacles, but now did everyhting if we want to plan later
-    env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size)
-    #env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
-    
-    # plotting
-    
-    fig, ax = plt.subplots()
-    env_map.plot(ax)    # plot the environment (obstacles)   
-    ax.set_xlim(-workspace_size[0] + workspace_center[0], workspace_size[1] + workspace_center[0])
-    ax.set_ylim(-workspace_size[0] + workspace_center[1], workspace_size[1] + workspace_center[1])
-    ax.scatter(workspace_center[0], workspace_center[1])
-    #ax.axis("equal")
-    plt.show()
-    
-    
+    return points, reroute     
     
 if __name__ == '__main__':
     main()
