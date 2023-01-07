@@ -92,12 +92,16 @@ class Map():
         collision = True
         while collision:
             new_xy = np.random.uniform(low=self.workspace_center-self.workspace_size/2, high=self.workspace_center+self.workspace_size/2, size = (1,2))[0]
+            # rounding = 0.8
+            # new_xy = (new_xy // rounding) * rounding 
             collision = self.collision_check(new_xy)
         return new_xy
 
     def random_pose(self) -> np.ndarray:
         # new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
         new_theta = np.random.uniform(low=-np.pi, high=np.pi)
+        # rounding = np.pi / 2
+        # new_theta = (new_theta // rounding) * rounding
         return np.hstack((self.random_position(), new_theta))
 
     def plot(self, ax : plt.Axes):
@@ -250,7 +254,7 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=10, i_break=3) -> bool:
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=False, n_closest=10, i_break=3) -> bool:
         valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:n_closest] # Select 10 closest nodes
 
         path_dist_approx = []

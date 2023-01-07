@@ -112,7 +112,7 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     # Define start and end poses
-    initial_pose = RRT.pose_deg(2.5, 5.0, 180)
+    initial_pose = RRT.pose_deg(2.5, 5.0, 0)
     final_pose = RRT.pose_deg(2.5, 7.0, 0)
     final_poses = [ RRT.pose_deg(2.5, 7.0, 180),
                     RRT.pose_deg(2.5, -7.0, 180),
@@ -132,7 +132,7 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
 
     # final_poses = [ RRT.pose_deg(2.5, 7.0, 0) ]
 
-    grow = False
+    grow = True
 
     if grow:
         # Initialise a RR tree
@@ -140,14 +140,14 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     
 
         # Grow the tree
-        tree.grow_blind(trange(5000), 2*60)
+        tree.grow_blind(trange(1800), 2*60)
 
-        with open("test.pickle", "wb") as outfile:
+        with open("tree.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("test.pickle", "rb") as infile:
+        with open("tree.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
 
@@ -170,8 +170,8 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     env_map.plot(ax)    # plot the environment (obstacles)
 
     # plot the edges of the tree
-    # for edge in tree.edges:
-    #     edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+    for edge in tree.edges:
+        edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
     # plot the start and endpoints
     RRT.plot_pose(ax, initial_pose, color="green")
