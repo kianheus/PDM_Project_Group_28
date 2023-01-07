@@ -26,7 +26,8 @@ import Approximator
 class consts():
     turning_radius = 0.8
     collision_resolution = 0.05
-    vehicle_radius = 0.01
+    point_resolution = 0.05
+    vehicle_radius = 0.2
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
@@ -81,14 +82,14 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
         path = tree.path_to(final_pose)
         path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
         path.print()
-        points = path.interpolate_poses(d=0.05)
+        points = path.interpolate_poses(d=consts.point_resolution)
         if plot:
             plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
         
     if plot:
         # plot the start and endpoints
-        steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
-        steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+        RRT.plot_pose(ax, initial_pose, color="green")
+        RRT.plot_pose(ax, final_pose, color="red")
 
         ax.set_xlim(-4, 4)
         ax.set_ylim(-4, 4)

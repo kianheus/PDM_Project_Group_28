@@ -434,5 +434,4 @@ def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3
     ax.scatter(pose[0], pose[1], **kwargs)
     kwargs.pop("s", None)
-    print(f"{[pose[0], pose[0] + np.cos(pose[2])*length]=}")
     ax.plot([pose[0], pose[0] + np.cos(pose[2])*length], [pose[1], pose[1] + np.sin(pose[2])*length], **kwargs)
