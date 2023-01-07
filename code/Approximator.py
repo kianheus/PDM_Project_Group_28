@@ -2,8 +2,8 @@ import numpy as np
 import Steering as steer
 
 from tqdm import trange
-from matplotlib import pyplot as plt
-# from scipy.interpolate import interpn
+# from matplotlib import pyplot as plt
+from scipy.interpolate import interpn
 import enum
 
 
