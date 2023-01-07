@@ -64,7 +64,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     # Define start and end poses
-    initial_pose = RRT.pose_deg(0.5, 0.5, 0)
+    initial_pose = RRT.pose_deg(0, 0, 0)
     final_pose = RRT.pose_deg(9, 5, 0)
 
     # Initialise a RR tree
@@ -307,9 +307,10 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     
     # only check if path collides with moving obstacles, because normal path is already collision free
     #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
-    env_map = RRT.Map(moving_obstacles, 0.1, workspace_center, workspace_size)
+    env_map = RRT.Map(moving_obstacles, 0.2, workspace_center, workspace_size)
     
     # only check all future points for collisions
+    prev_points = points.copy()
     points = points[i:]
     collision = env_map.collision_check_array(points)
     index = np.argwhere(collision == True)
@@ -320,17 +321,28 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
         # remove the points that collide, add offset, to see new future goal point
         #print(index)
         index = np.arange(np.min(index)-offset, np.max(index)+offset, 1)
+        first_coliding_point = points[np.min(index)]
         #print(index)
         mask = np.ones(points.shape[0], bool)
         mask[index] = False
+        coliding_points = points[~mask,:]
         points = np.squeeze(points[mask,:])
         start = state
-        future_points = points[np.max(index):] # used for creating new path
-        #goal = points[np.min(index)]
-        goal = future_points[0]
-    
+        future_points = points[np.min(index):] # used for creating new path
+
+        before_points = points[:np.min(index)]
+        coliding_points = np.vstack((before_points, coliding_points)) # these points are being removed
+        # goal = points[np.max(index)]
+        try:
+            goal = future_points[0]
+        except:
+            print(f"{future_points=}")
+            print(f"{np.max(index)=}")
+            print(f"{np.min(index)=}")
+            exit()
+
         # check if distane between goal and state is within the lookahead distance
-        if np.linalg.norm(start - goal) < 7:
+        if np.linalg.norm(start - first_coliding_point) < 3:
             print("collision within range")
             
             # use smaller map to speed up RRT
@@ -341,7 +353,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             #workspace_limit = workspace_size/2+workspace_center
             
             # now use all obstacles
-            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
+            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.2, workspace_center, workspace_size) # checks whole space, noy only workspace
             
             #miniRRT(state, obstacles, moving_obstacles, start, goal)
             
@@ -368,11 +380,17 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 points = np.vstack([updated_points, future_points]) # combine new and old path
                 reroute = True # used to reset index
                 #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+                ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
+
             
             
-            ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='viridis')
-            ax.scatter(start[0], start[1], c= 0x000000)
-            ax.scatter(goal[0], goal[1], c= 0x000000)
+            ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='winter')
+            ax.scatter(coliding_points[:,0], coliding_points[:,1], c=range(coliding_points.shape[0]), cmap='autumn')
+
+
+            RRT.plot_pose(ax, start, color='green')
+            RRT.plot_pose(ax, goal, color='blue')
+            RRT.plot_pose(ax, first_coliding_point, color='red')
             ax.axis("equal")
             plt.show()
             
