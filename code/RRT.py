@@ -56,7 +56,14 @@ The environment map that is being planned for is a collection of obstacles and a
 The map can be used to check for collisions, as well as generating random positions or poses.
 '''
 class Map():
-    def __init__(self, obstacles : np.ndarray, vehicle_radius : float, workspace_center, workspace_size):
+    def __init__(self, obstacles : np.ndarray, vehicle_radius : float = None, workspace_center = None, workspace_size = None, consts = None):
+        if consts is not None:
+            if vehicle_radius is None:
+                vehicle_radius = consts.vehicle_radius
+            if workspace_center is None:
+                workspace_center = consts.workspace_center
+            if workspace_size is None:
+                workspace_size = consts.workspace_size
         self.obstacles = obstacles
         self.vehicle_radius = vehicle_radius
         self.workspace_center = workspace_center
@@ -113,7 +120,12 @@ The tree has a list of node poses (not node objects), which can be used to rapid
 The tree also contains a collision map and parameters of the search
 '''
 class Tree():
-    def __init__(self, map : Map, turning_radius : float, initial_pose : np.ndarray, collision_resolution : float):
+    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None):
+        if consts is not None:
+            if turning_radius is None:
+                turning_radius = consts.turning_radius
+            if collision_resolution is None:
+                collision_resolution = consts.collision_resolution
         self.map = map
         self.base_node = Node(initial_pose)
         self.edges : list[Edge] = []
