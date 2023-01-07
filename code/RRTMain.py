@@ -23,6 +23,8 @@ from matplotlib import patches
 
 import Approximator
 
+import pickle
+
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -31,7 +33,7 @@ import Approximator
 def main():
     
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     state, obstacles, moving_obstacles = env.reset() # start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
@@ -48,10 +50,10 @@ def main():
     collision_resolution = 0.05
     
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
-    mujoco_sim(env, points)
+    # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    # mujoco_sim(env, points)
 
-    #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
     #test_approximator(obstacles, workspace_center, workspace_size, radius)
 
@@ -104,40 +106,93 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
 
 def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, collision_resolution):
+    np.random.seed(42)
+
     # Set up a environment map object (used for collisions and random point generation)
     env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
 
     # Define start and end poses
-    initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+    initial_pose = RRT.pose_deg(2.5, 5.0, 180)
+    final_pose = RRT.pose_deg(2.5, 7.0, 0)
+    final_poses = [ RRT.pose_deg(2.5, 7.0, 180),
+                    RRT.pose_deg(2.5, -7.0, 180),
+                    RRT.pose_deg(2.5, -5.0, 180),
+                    RRT.pose_deg(2.5, -2.5, 180),
+                    RRT.pose_deg(2.5, -9.0, 180),
+                    RRT.pose_deg(2.5, 2.5, 180),
+                    RRT.pose_deg(2.5, 9.0, 180),
+                    RRT.pose_deg(-2.5, 5.0, 0),
+                    RRT.pose_deg(-2.5, 7.0, 0),
+                    RRT.pose_deg(-2.5, -7.0, 0),
+                    RRT.pose_deg(-2.5, -5.0, 0),
+                    RRT.pose_deg(-2.5, -2.5, 0),
+                    RRT.pose_deg(-2.5, -9.0, 0),
+                    RRT.pose_deg(-2.5, 2.5, 0),
+                    RRT.pose_deg(-2.5, 9.0, 0)]
 
-    # Initialise a RR tree
-    tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
+    # final_poses = [ RRT.pose_deg(2.5, 7.0, 0) ]
+
+    grow = False
+
+    if grow:
+        # Initialise a RR tree
+        tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
     
-    # Grow the tree
-    tree.grow_blind(trange(10000), 1*60)
+
+        # Grow the tree
+        tree.grow_blind(trange(5000), 2*60)
+
+        with open("test.pickle", "wb") as outfile:
+            # "wb" argument opens the file in binary mode
+            pickle.dump(tree, outfile)
+    else:
+        print("loading...")
+        with open("test.pickle", "rb") as infile:
+            tree : RRT.Tree = pickle.load(infile)
+        print("loaded.")
+
+
+    time_start = time.time()
+
+    success = tree.add_path_to(final_pose, modify_angle=False, n_closest=20, i_break=3)
+    if success:
+        path = tree.path_to(final_pose)
+
+    time_end = time.time()
+
+    print(f"time = {time_end - time_start}")
+
+    print(f"{success=}")
 
     tree.print()
     
-    """
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
 
     # plot the edges of the tree
-    for edge in tree.edges:
-        edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+    # for edge in tree.edges:
+    #     edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
     # plot the start and endpoints
-    steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
-    steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+    RRT.plot_pose(ax, initial_pose, color="green")
+    RRT.plot_pose(ax, final_pose, color="red")
 
-    ax.set_xlim(-4, 4)
-    ax.set_ylim(-4, 4)
+    for final_pose in final_poses:
+        RRT.plot_pose(ax, final_pose, color="red")
+        success = tree.add_path_to(final_pose, modify_angle=False, n_closest=50, i_break=15)
+        if success:
+            path = tree.path_to(final_pose)
+            path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+            points = path.interpolate_poses(d=0.05)
+            plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            # for point in points:
+            #     RRT.plot_pose(ax, point)
+
+    # ax.set_xlim(-4, 4)
+    # ax.set_ylim(-4, 4)
     plt.axis("equal")
 
     plt.show()
-    """
-
 
 def test_approximator(obstacles, workspace_center, workspace_size, turning_radius):
     print("Testing approximator")

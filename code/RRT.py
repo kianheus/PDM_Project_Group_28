@@ -188,7 +188,7 @@ class Tree():
     This function returns none if the given end pose is not a node in the tree.
     If a path exists, a steer.Path object is returned going from the origin to the end pose
     '''
-    def path_to(self, end_pose):
+    def path_to(self, end_pose) -> steer.Path:
         segments = []
         node = self.get_node(end_pose)
 
@@ -222,6 +222,8 @@ class Tree():
             print(f"No matching node found. Closest node at {distances[idx_closest]}.")
             print(f"{distances=}")
             print(f"{offset=}")
+            print(f"{self.node_poses=}")
+            print(f"{pose=}")
             return None
         return self.nodes[idx_closest]
 
@@ -248,8 +250,8 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
-        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:50] # Select 10 closest nodes
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=10, i_break=3) -> bool:
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:n_closest] # Select 10 closest nodes
 
         path_dist_approx = []
         angle_random = new_pose[2]
@@ -261,13 +263,13 @@ class Tree():
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
             # potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
-            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Interpolated))
+            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Nearest))
 
         shortest_path_ids = np.argsort([dist + self.node_distances[valid_indices][i] for i, dist in enumerate(path_dist_approx)])
         # shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
         for i, shortest_path_idx in enumerate(shortest_path_ids):
-            if i>4:
+            if i > i_break:
                 break
             steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
             # steering_path = potential_steering_paths[shortest_path_idx]
@@ -422,5 +424,4 @@ def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3
     ax.scatter(pose[0], pose[1], **kwargs)
     kwargs.pop("s", None)
-    print(f"{[pose[0], pose[0] + np.cos(pose[2])*length]=}")
     ax.plot([pose[0], pose[0] + np.cos(pose[2])*length], [pose[1], pose[1] + np.sin(pose[2])*length], **kwargs)
