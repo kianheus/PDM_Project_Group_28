@@ -46,7 +46,7 @@ def main():
     points, ax = test_rrt(obstacles, initial_pose)
     mujoco_sim(env, points, ax)
 
-    #test_rrt_blind(obstacles)
+    # test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
@@ -59,7 +59,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     env_map = RRT.Map(obstacles, consts=consts)
 
     # Define end poses
-    final_pose = RRT.pose_deg(2.5, 5, 180)
+    final_pose = RRT.pose_deg(5, 5, 180)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
@@ -80,11 +80,11 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     points = np.array([[0.0, 0.0, 0.0]])
     if done:
         path = tree.path_to(final_pose)
-        path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
         path.print()
         points = path.interpolate_poses(d=consts.point_resolution)
         if plot:
-            plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+            RRT.plot_points(ax, points, cmap='viridis')
         
     if plot:
         # plot the start and endpoints
@@ -106,7 +106,7 @@ def test_rrt_blind(obstacles):
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+    final_pose = RRT.pose_deg(1.5, 5.0, 180)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)

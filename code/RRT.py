@@ -69,14 +69,24 @@ class Map():
         self.workspace_center = workspace_center
         self.workspace_size = workspace_size
 
-    def collision_check(self, points : np.ndarray) -> bool:
+        self.obstacle_1 = np.atleast_2d(self.obstacles[:,0] - self.obstacles[:,3]/2)
+        self.obstacle_2 = np.atleast_2d(self.obstacles[:,0] + self.obstacles[:,3]/2)
+        self.obstacle_3 = np.atleast_2d(self.obstacles[:,1] - self.obstacles[:,4]/2)
+        self.obstacle_4 = np.atleast_2d( self.obstacles[:,1] + self.obstacles[:,4]/2)
+
+    def collision_check_array(self, points : np.ndarray) -> np.ndarray:
         points = np.atleast_2d(points)
-        for point in points:
-            for obstacle in self.obstacles:
-                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                    return True
-        return False
+        points_x = np.atleast_2d(points[:,0]).T
+        points_y = np.atleast_2d(points[:,1]).T
+        a = points_x + self.vehicle_radius > self.obstacle_1
+        a &= points_x - self.vehicle_radius < self.obstacle_2
+        a &= points_y + self.vehicle_radius > self.obstacle_3
+        a &= points_y - self.vehicle_radius < self.obstacle_4
+        return a.any(axis=1)
+
+    def collision_check(self, points : np.ndarray) -> bool:
+        return self.collision_check_array(points).any()
+
 
     def collision_check_single(self, point : np.ndarray) -> bool:
         for obstacle in self.obstacles:
@@ -85,15 +95,7 @@ class Map():
                 return True
         return False
     
-    def collision_check_array(self, points : np.ndarray) -> bool:
-        points = np.atleast_2d(points)
-        check_array = np.zeros((points.shape[0],), dtype=bool)
-        for index, point in enumerate(points):
-            for obstacle in self.obstacles:
-                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                    check_array[index] = 1
-        return check_array
+    
 
     def random_position(self) -> np.ndarray:
         collision = True
@@ -261,7 +263,7 @@ class Tree():
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
     def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
-        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:50] # Select 10 closest nodes
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:25] # Select 10 closest nodes
 
         path_dist_approx = []
         angle_random = new_pose[2]
@@ -279,7 +281,7 @@ class Tree():
         # shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
         for i, shortest_path_idx in enumerate(shortest_path_ids):
-            if i>4:
+            if i>10:
                 break
             steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
             # steering_path = potential_steering_paths[shortest_path_idx]
@@ -435,3 +437,6 @@ def plot_pose(ax, pose, length=0.1, **kwargs):
     ax.scatter(pose[0], pose[1], **kwargs)
     kwargs.pop("s", None)
     ax.plot([pose[0], pose[0] + np.cos(pose[2])*length], [pose[1], pose[1] + np.sin(pose[2])*length], **kwargs)
+
+def plot_points(ax, points, **kwargs):
+    plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]))
