@@ -65,7 +65,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0, 0, 0)
-    final_pose = RRT.pose_deg(9, 5, -90)
+    final_pose = RRT.pose_deg(9, 5, 90)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
@@ -231,9 +231,17 @@ def mujoco_sim(env, points):
     longitudal_pid = PIDcontroller(15, 0, 3)
 
     state, obstacles, moving_obstacles = env.reset() #start with reset
+
+    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
+    original_points = points.copy()
+
+    workspace_center = np.array([0, 0]) # Coordinate center of workspace
+    workspace_size = np.array([30, 30]) # Dimensions of workspace
+    env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
     starttime = time.time()
     i = 0
     n = 0
+    states = np.expand_dims(state.copy(), axis=0)
     #simulate for 100 s
     while True:
         
@@ -273,6 +281,7 @@ def mujoco_sim(env, points):
         action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
         state, obstacles, moving_obstacles = env.step(action) #set step in environment
         env.render(mode = True) # turn rendering on or off
+        states = np.vstack((states, state))
 
         ########################## reset after 10 seconds, this can be changed ##########################   
         if env.get_time() > 20:
@@ -291,6 +300,12 @@ def mujoco_sim(env, points):
         n = n+1
         
         #time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
+    fig, ax = plt.subplots()
+    env_map.plot(ax)
+    ax.scatter(states[:,0], states[:,1], c=range(states.shape[0]), cmap='viridis')
+    ax.plot(original_points[:,0], original_points[:,1], color='red')
+    ax.axis("equal")
+    plt.show()
 
 def local_planner(state, obstacles, moving_obstacles, points, i):
     reroute = False # used for resetting the index i
@@ -366,11 +381,11 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # Grow the tree to the final pose
             done = tree.grow_to(goal, trange(200), 0.25)
             
-            fig, ax = plt.subplots()
-            env_map.plot(ax)    # plot the environment (obstacles)   
-            ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
-            ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
-            ax.scatter(goal[0], goal[1])
+            # fig, ax = plt.subplots()
+            # env_map.plot(ax)    # plot the environment (obstacles)   
+            # ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+            # ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+            # ax.scatter(goal[0], goal[1])
             
             if done:
                 path = tree.path_to(goal)
@@ -379,23 +394,18 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 updated_points = path.interpolate_poses(d=0.05) # new path to goal
                 points = np.vstack([updated_points, future_points]) # combine new and old path
                 reroute = True # used to reset index
-                #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-                ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
+
+                # ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
 
             
             
-            ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='winter')
-            ax.scatter(coliding_points[:,0], coliding_points[:,1], c=range(coliding_points.shape[0]), cmap='autumn')
-
-
-            RRT.plot_pose(ax, start, color='green')
-            RRT.plot_pose(ax, goal, color='blue')
-            RRT.plot_pose(ax, first_coliding_point, color='red')
-            ax.axis("equal")
-            plt.show()
-            
-            #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-            #ax.scatter(final_path[:,0], final_path[:,1], c=range(final_path.shape[0]), cmap='viridis')
+            # ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='winter')
+            # ax.scatter(coliding_points[:,0], coliding_points[:,1], c=range(coliding_points.shape[0]), cmap='autumn')
+            # RRT.plot_pose(ax, start, color='green')
+            # RRT.plot_pose(ax, goal, color='blue')
+            # RRT.plot_pose(ax, first_coliding_point, color='red')
+            # ax.axis("equal")
+            # plt.show()
             
         
     else:
