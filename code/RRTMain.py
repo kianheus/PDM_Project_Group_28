@@ -317,14 +317,15 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     # if there are collisions, do local planning
     if index.size != 0: 
         print("Possible collision")
-        
         # remove the points that collide, add offset, to see new future goal point
+        #print(index)
         index = np.arange(np.min(index)-offset, np.max(index)+offset, 1)
+        #print(index)
         mask = np.ones(points.shape[0], bool)
         mask[index] = False
         points = np.squeeze(points[mask,:])
         start = state
-        future_points = points[np.min(index):] # used for creating new path
+        future_points = points[np.max(index):] # used for creating new path
         #goal = points[np.min(index)]
         goal = future_points[0]
     
@@ -369,7 +370,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             
             
-            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='viridis')
             ax.scatter(start[0], start[1], c= 0x000000)
             ax.scatter(goal[0], goal[1], c= 0x000000)
             ax.axis("equal")
