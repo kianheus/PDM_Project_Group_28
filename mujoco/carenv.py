@@ -106,11 +106,12 @@ class Car(core.Env):
                         np.hstack(([self.data.body('hospitalbed10').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed10').xquat), np.array([1.1,0.55])])),
                         np.hstack(([self.data.body('hospitalbed11').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed11').xquat), np.array([1.1,0.55])])),
                         np.hstack(([self.data.body('hospitalbed12').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed12').xquat), np.array([1.1,0.55])]))])
-
+        obs[:,3:] = obs[:,3:]*2 
         return obs
     
     def get_moving_obstacle(self): 
         obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
+        obs[:,3:] = obs[:,3:]*2 
         return obs
     
     def get_time(self):

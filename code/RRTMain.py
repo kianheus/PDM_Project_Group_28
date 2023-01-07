@@ -26,7 +26,7 @@ import Approximator
 class consts():
     turning_radius = 0.8
     collision_resolution = 0.05
-    vehicle_radius = 0.1
+    vehicle_radius = 0.01
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
@@ -39,7 +39,7 @@ def main():
     # Create environment and extract relevant information
     env = carenv.Car(render=True)
     initial_pose, obstacles, moving_obstacles = env.reset() # start with reset
-    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
+    # [x, y, rotation, length, width]
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
     points, ax = test_rrt(obstacles, initial_pose)
@@ -228,7 +228,6 @@ def mujoco_sim(env, points, ax):
 
     state, obstacles, moving_obstacles = env.reset() #start with reset
 
-    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
     original_points = points.copy()
 
     workspace_center = np.array([0, 0]) # Coordinate center of workspace
@@ -310,10 +309,6 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
     #workspace_center = np.array([0, 0]) # Coordinate center of workspace
     workspace_size = np.array([15, 15]) # Dimensions of workspace
-    
-    # convert to right sizes
-    obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
-    moving_obstacles[:,3:] = moving_obstacles[:,3:]*2 # [x, y, rotation, length, width]
     
     # only check if path collides with moving obstacles, because normal path is already collision free
     #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
