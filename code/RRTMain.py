@@ -335,7 +335,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # use smaller map to speed up RRT
             workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
             #workspace_center = np.array([0, 0]) # Coordinate center of workspace
-            workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace
+            workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace CHECK FOR VERTICAL OBSTACLES
             
             #workspace_limit = workspace_size/2+workspace_center
             
@@ -353,11 +353,11 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # Grow the tree to the final pose
             done = tree.grow_to(goal, trange(200), 0.25)
             
-            #fig, ax = plt.subplots()
-            #env_map.plot(ax)    # plot the environment (obstacles)   
-            #ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
-            #ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
-            #ax.scatter(goal[0], goal[1])
+            fig, ax = plt.subplots()
+            env_map.plot(ax)    # plot the environment (obstacles)   
+            ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+            ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+            ax.scatter(goal[0], goal[1])
             
             if done:
                 path = tree.path_to(goal)
@@ -369,9 +369,11 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
                 #plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             
             
-            #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-            #ax.axis("equal")
-            #plt.show()
+            ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+            ax.scatter(start[0], start[1], c= 0x000000)
+            ax.scatter(goal[0], goal[1], c= 0x000000)
+            ax.axis("equal")
+            plt.show()
             
             #ax.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
             #ax.scatter(final_path[:,0], final_path[:,1], c=range(final_path.shape[0]), cmap='viridis')
