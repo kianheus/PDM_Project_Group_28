@@ -161,13 +161,13 @@ class Tree():
                 break
             if added_node:
                 done = self.connect_to_newest_node(end_pose)
-                if neighbouring_node_ids.shape[0] > 0:
-                    self.rewire(neighbouring_node_ids)
-                #if done:
-                #    print("Found a path.")
-                #    break
+                #if neighbouring_node_ids.shape[0] > 0:
+                #    self.rewire(neighbouring_node_ids)
+                if done:
+                    print("Found a path.")
+                    break
             added_node, neighbouring_node_ids = self.grow_single()
-
+        
         return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
@@ -246,7 +246,7 @@ class Tree():
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
     def add_path_to(self, new_pose : np.ndarray, modify_angle=True, neighbour_idx = None) -> bool: #AND A np.ndarray:
-        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10]
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10] # Select 10 closest nodes
 
         potential_steering_paths : list[steer.Path] = []
         angle_random = new_pose[2]
@@ -278,16 +278,20 @@ class Tree():
 
             return True, valid_indices
         return False, valid_indices 
-    """
-    This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
-    radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
-    nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
-    """
+    
+    
     def rewire(self, neighbouring_node_ids):
+        
         for idx in neighbouring_node_ids:
+            
+            print("Index:", idx)
+            print("Length nodes list:", len(self.nodes))
             neighbouring_node = self.nodes.pop(idx)
+            
+            """
             # TODO: Remove all edges which have neighbouring_node as self.end_node
 
+            
             neighbouring_pose = self.node_poses[idx]
             self.node_poses = np.delete(self.node_poses, idx, axis=0)
             _, __ = self.add_path_to(neighbouring_pose, True, idx)
@@ -295,13 +299,13 @@ class Tree():
             new_neighbour.children_nodes = neighbouring_node.children_nodes
             for child in neighbouring_node.children_nodes:
                 self.distance_update(neighbouring_node, child)
-
+            """
 
     def distance_update(self, parent : Node, child : Node):
         child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
         if child.children_nodes:
             for grandchild in child.children_nodes:
-                print(grandchild.pose)
+                #print("Hello")
                 self.distance_update(child, grandchild) 
 
         pass
