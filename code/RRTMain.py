@@ -357,7 +357,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             exit()
 
         # check if distane between goal and state is within the lookahead distance
-        if np.linalg.norm(start - first_coliding_point) < 3:
+        if np.linalg.norm(start[:2] - first_coliding_point[:2]) < 3:
             print("collision within range")
             
             # use smaller map to speed up RRT
