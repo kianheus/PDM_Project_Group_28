@@ -9,6 +9,7 @@ from tqdm import tqdm, trange
 from matplotlib import pyplot as plt
 from matplotlib import patches
 import time
+import Approximator
 
 # -----------------------------------------------------------------------------
 # Define class that executes the RRT algorithm
@@ -121,6 +122,7 @@ class Tree():
         self.node_distances = np.array([0])
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
+        self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
 
     def print(self):
         print(f"Tree:")
@@ -247,13 +249,9 @@ class Tree():
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
     def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
-        distances = np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1) + self.node_distances
-        closest_distance = np.min(distances)
-        upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
-        valid_indices = distances <= upper_bound
-        valid_indices = np.arange(len(valid_indices))[valid_indices]
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10] # Select 10 closest nodes
 
-        potential_steering_paths : list[steer.Path] = []
+        path_dist_approx = []
         angle_random = new_pose[2]
 
         for idx in valid_indices:
@@ -262,15 +260,16 @@ class Tree():
                 angle_displacement = np.arctan2(displacement[1], displacement[0])
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
-            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
+            # potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
+            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Interpolated))
 
-        shortest_path_idxs = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+        shortest_path_ids = np.argsort([dist + self.node_distances[valid_indices][i] for i, dist in enumerate(path_dist_approx)])
+        # shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
-        for i, shortest_path_idx in enumerate(shortest_path_idxs):
-            if i > 4:
-                break
+        for i, shortest_path_idx in enumerate(shortest_path_ids):
 
-            steering_path = potential_steering_paths[shortest_path_idx]
+            steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
+            # steering_path = potential_steering_paths[shortest_path_idx]
             parent_coord_idx = valid_indices[shortest_path_idx]
 
             discrete_path = steering_path.interpolate(d=self.collision_resolution)
@@ -285,7 +284,7 @@ class Tree():
                 self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
 
             return True
-        return False
+        return False 
     
 """
 This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a

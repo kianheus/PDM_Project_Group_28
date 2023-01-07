@@ -65,7 +65,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0, 0, 0)
-    final_pose = RRT.pose_deg(9, 5, 0)
+    final_pose = RRT.pose_deg(9, 5, -90)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
