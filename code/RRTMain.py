@@ -22,6 +22,12 @@ from matplotlib import collections as mc
 from matplotlib import patches
 
 
+
+
+
+np.random.seed(28)
+
+
 # -----------------------------------------------------------------------------
 # Define main fucntion
 # -----------------------------------------------------------------------------
@@ -46,10 +52,11 @@ def main():
     collision_resolution = 0.05
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    #points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    #test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
     #mujoco_sim(env, points)
 
-    #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
 
 
