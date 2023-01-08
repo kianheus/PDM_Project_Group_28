@@ -123,26 +123,16 @@ class Tree():
     '''
     Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
     '''
-    def add_node(self, start_node : Node, path : steer.Path, neighbour_idx = None):
+    def add_node(self, start_node : Node, path : steer.Path):
         node = start_node
         for segment in path.segments:
             path_new = steer.PathSimple(segment)
             new_edge = Edge(node, path_new)
             node = new_edge.end_node
-            if neighbour_idx == None:
-                self.nodes.append(node)
-                self.edges.append(new_edge)
-                self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
-                self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
-            """
-            else:
-                self.nodes.insert(neighbour_idx, node)
-                self.edges.insert(neighbour_idx, new_edge)
-                np.insert(self.node_poses, neighbour_idx, np.atleast_2d(new_edge.end_node.pose))
-                np.insert(self.node_distances, neighbour_idx, np.atleast_2d(new_edge.end_node.pose))
-                #self.node_poses = np.insert(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
-                self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
-            """
+            self.nodes.append(node)
+            self.edges.append(new_edge)
+            self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
+            self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
         # print("Added new node")
 
     '''
@@ -253,7 +243,7 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, neighbour_idx=None) -> bool: #AND A np.ndarray:
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool: #AND A np.ndarray:
         valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10] # Select 10 closest nodes
 
         potential_steering_paths : list[steer.Path] = []
@@ -280,9 +270,9 @@ class Tree():
                 continue
 
             if parent_coord_idx == 0:
-                self.add_node(self.base_node, steering_path, neighbour_idx)
+                self.add_node(self.base_node, steering_path)
             else:
-                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path, neighbour_idx)
+                self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
 
             return True, valid_indices
         return False, valid_indices 
@@ -302,6 +292,7 @@ class Tree():
             
             new_neighbouring_distance_origin = added_node.distance_from_origin + path.length
             
+            """
             if new_neighbouring_distance_origin < neighbouring_distance_origin:
                 #self.dummy_counter += 1
                 #print(f"{self.dummy_counter=}")
@@ -312,11 +303,10 @@ class Tree():
                 if collision:
                     continue
                 
-                """
-                self.nodes[idx].parent_node.children_nodes.remove(self.nodes[idx]) 
-                #self.node_poses = np.delete(self.node_poses, idx, axis=0) # delete the pose from node_poses
+                # Update the parameters of the neighbour we are rewiring to
+                self.nodes[idx].parent_node.children_nodes.remove(self.nodes[idx]) # remove old parent
                 self.nodes[idx].parent_node = added_node
-                self.nodes[idx].parent_node.children_nodes.append(self.nodes[idx]) # has new parent
+                self.nodes[idx].parent_node.children_nodes.append(self.nodes[idx]) # assign new parent
                 self.nodes[idx].parent_edge.start_node = added_node
                 self.nodes[idx].parent_edge.path = path
                 self.nodes[idx].distance_from_origin = new_neighbouring_distance_origin
@@ -324,9 +314,8 @@ class Tree():
                 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
+            """
                 
-                #_, _ = add_path_to(neighbouring_pose, True, idx)
-                """
                 
             
             #self.node_poses = np.delete(self.node_poses, idx, axis=0) # delete the pose from node_poses
