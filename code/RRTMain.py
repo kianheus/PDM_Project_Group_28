@@ -52,8 +52,6 @@ def main():
 
     #test_approximator(obstacles)
 
-
-    
 # Kian, Thomas
 def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
 
@@ -355,7 +353,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # use smaller map to speed up RRT
             workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
             #workspace_center = np.array([0, 0]) # Coordinate center of workspace
-            workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace CHECK FOR VERTICAL OBSTACLES
+            workspace_size = np.array([max(start[0]+goal[0]+0.1, 1.6), max(start[1]+goal[1], 1.6)]) # Dimensions of workspace CHECK FOR VERTICAL OBSTACLES
             
             #workspace_limit = workspace_size/2+workspace_center
             

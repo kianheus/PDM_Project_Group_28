@@ -151,3 +151,4 @@ class Car(core.Env):
     # closing the mujoco viewer window
     def close_window(self):
         self.viewer.close()
+ 
