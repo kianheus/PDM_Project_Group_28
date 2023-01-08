@@ -52,7 +52,7 @@ def main():
     collision_resolution = 0.05
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    #points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
     #mujoco_sim(env, points)
 
     #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
@@ -73,9 +73,8 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
 
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(100), 180, star = True, informed = False)
-    #tree.rewire(final_pose))
-
+    done, path = tree.grow_to(final_pose, trange(500), 180, star = True, informed = False)
+    
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
 
@@ -86,7 +85,7 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     # backtrack the tree to generate a path and a list of points
     points = np.array([[0.0, 0.0, 0.0]])
     if done:
-        path = tree.path_to(final_pose)
+        #path = tree.path_to(final_pose)
         path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
         path.print()
         points = path.interpolate_poses(d=0.05)

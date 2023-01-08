@@ -153,20 +153,27 @@ class Tree():
         added_node = True
         done = False
         neighbouring_node_ids = np.array([])
+        shortest_length = 1000000 
+        best_path = []
         for i in iter:
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
             if added_node:
-                done = self.connect_to_newest_node(end_pose)
                 if neighbouring_node_ids.shape[0] > 0:  
                     self.rewire(neighbouring_node_ids)
+                    
+                done, path = self.connect_to_newest_node(end_pose)
+                
+                if path.length < shortest_length:
+                    shortest_length = path.length
+                    best_path = path
                 #if done:
                     #print("Found a path.")
                     #break
             added_node, neighbouring_node_ids = self.grow_single()
         
-        return done
+        return True, best_path
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
         close_time=time.time() + max_seconds
@@ -229,13 +236,13 @@ class Tree():
         discrete_path = path.interpolate(d=self.collision_resolution)
         collision = self.map.collision_check(discrete_path)
         if collision:
-            return False
+            return False, path
         # add path to tree
         if len(self.edges) > 0:
             self.add_node(self.edges[-1].end_node, path)
         else:
             self.add_node(self.base_node, path)
-        return True
+        return True, path
 
 
     '''
@@ -292,7 +299,7 @@ class Tree():
             
             new_neighbouring_distance_origin = added_node.distance_from_origin + path.length
             
-            """
+            
             if new_neighbouring_distance_origin < neighbouring_distance_origin:
                 #self.dummy_counter += 1
                 #print(f"{self.dummy_counter=}")
@@ -314,7 +321,7 @@ class Tree():
                 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
-            """
+            
                 
                 
             
