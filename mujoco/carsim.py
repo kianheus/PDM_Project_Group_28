@@ -40,7 +40,7 @@ longitudal_pid = PIDcontroller(1, 0, 0.1)
 # initialise environment
 env = carenv.Car() #load in Car environment
 
-state, obstacles, moving_obstacles = env.reset(1,1) #start with reset
+state, obstacles, moving_obstacles = env.reset(1,1, 1.5*np.pi) #start with reset
 
 starttime = time.time()
 
@@ -86,7 +86,7 @@ while True:
     #print(moving_obstacles)
     ########################## reset every 20 seconds, this can be changed ##########################   
     if env.get_time() > 2:
-        env.reset(1,1)
+        env.reset(1,1, 0.5*np.pi)
             
     
     time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop

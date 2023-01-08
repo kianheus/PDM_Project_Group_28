@@ -32,7 +32,7 @@ class consts():
     workspace_size = np.array([30, 30])
 
 #Define start pose
-start_pose = np.array([1,1,0])
+start_pose = np.array([1,1, np.pi])
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -41,7 +41,7 @@ start_pose = np.array([1,1,0])
 def main():
     # Create environment and extract relevant information
     env = carenv.Car(render=True)
-    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1]) # start with reset
+    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
     # [x, y, rotation, length, width]
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
@@ -229,7 +229,7 @@ def mujoco_sim(env, points, ax):
     lateral_pid = PIDcontroller(1, 0, 0)
     longitudal_pid = PIDcontroller(15, 0, 3)
 
-    state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1]) #start with reset
+    state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) #start with reset
 
     original_points = points.copy()
 
@@ -280,7 +280,6 @@ def mujoco_sim(env, points, ax):
         env.render(mode = True) # turn rendering on or off
         states = np.vstack((states, state))
 
-        ########################## reset after 10 seconds, this can be changed ##########################   
         if env.get_time() > 20:
             env.close_window()
             break

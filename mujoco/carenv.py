@@ -20,7 +20,7 @@ class Car(core.Env):
             self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
 
 
-    def reset(self, x, y):
+    def reset(self, x, y, theta):
         
         
         
@@ -28,7 +28,7 @@ class Car(core.Env):
         mujoco.mj_resetCallbacks()
         mujoco.mj_resetData(self.model, self.data)
         
-        self.set_position(x, y)
+        self.set_position(x, y, theta)
         
         mujoco.mj_step(self.model, self.data) #set one step of model to be sure that everything is initialised
         
@@ -70,13 +70,14 @@ class Car(core.Env):
     def render(self, mode):
         self.viewer.render()
         
-    def set_position(self, x, y):
+    def set_position(self, x, y, theta):
 
         #self.model.body('movingbed1').pos = [1,1,0]
         #self.model.body('movingbed1').pos = [1,1,0]
         #self.model.body('buddy').pos = [1,1,0]
-        self.data.qpos = [x,y,0,0,0,0,0,0,0,0,0,0,0,0,0] # x,y,z, -, -, -, 180 flip, ...
-
+        self.data.qpos = [x,y,0,np.cos(theta/2),0,0,np.sin(theta/2),0,0,0,0,0,0,0,0] # x,y,z, -, -, -, 180 flip, ...
+        #self.data.body('buddy').xquat = [0,1,0,0]
+        
     def get_sensor_data(self):
 
         rl = R.from_quat(self.data.sensor('buddy_quat').data)
@@ -86,7 +87,12 @@ class Car(core.Env):
                 'car_orientation' : orientation}
 
         return data
-
+    
+    def degree_to_quat(self, degree):
+        rl = R.from_euler(degree)
+        orientation = rl.as_quat
+        return orientation
+    
     def quat_to_degree(self, quat):
         rl = R.from_quat(quat)
         orientation = - (rl.as_euler('xyz')[0] - np.pi)
