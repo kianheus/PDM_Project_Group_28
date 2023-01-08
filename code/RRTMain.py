@@ -31,6 +31,8 @@ class consts():
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
+#Define start pose
+start_pose = np.array([1,1,0])
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -39,7 +41,7 @@ class consts():
 def main():
     # Create environment and extract relevant information
     env = carenv.Car(render=True)
-    initial_pose, obstacles, moving_obstacles = env.reset() # start with reset
+    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1]) # start with reset
     # [x, y, rotation, length, width]
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
@@ -57,7 +59,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
 
     # Set up a environment map object (used for collisions and random point generation)
     env_map = RRT.Map(obstacles, consts=consts)
-
+    
     # Define end poses
     final_pose = RRT.pose_deg(5, 5, 180)
 
@@ -227,7 +229,7 @@ def mujoco_sim(env, points, ax):
     lateral_pid = PIDcontroller(1, 0, 0)
     longitudal_pid = PIDcontroller(15, 0, 3)
 
-    state, obstacles, moving_obstacles = env.reset() #start with reset
+    state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1]) #start with reset
 
     original_points = points.copy()
 
