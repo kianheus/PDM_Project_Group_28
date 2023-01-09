@@ -52,10 +52,10 @@ def main():
     collision_resolution = 0.05
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    #points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
     #mujoco_sim(env, points)
 
-    #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
 
 
 
@@ -110,14 +110,19 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+    final_pose = RRT.pose_deg(1.0, 1.0, 0)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
 
     # Grow the tree
-    tree.grow_blind(trange(10000), 1*60)
-
+    tree.grow_blind(trange(100), 1*60)
+    
+    tree.add_path_to(final_pose)
+    print(tree.get_node(final_pose))
+  
+    path = tree.path_to(final_pose)
+    
     tree.print()
 
     fig, ax = plt.subplots()
@@ -134,6 +139,11 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
     plt.axis("equal")
+    
+    path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+    path.print()
+    points = path.interpolate_poses(d=0.05)
+    plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
     plt.show()
 
