@@ -54,11 +54,11 @@ def main():
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
 
-    # points, ax = test_rrt(obstacles, initial_pose)
-    # env = carenv.Car(render=True)
-    # mujoco_sim(env, points)
+    points, ax = test_rrt(obstacles, initial_pose)
+    env = carenv.Car(render=True)
+    mujoco_sim(env, points)
 
-    test_rrt_blind(obstacles)
+    # test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
@@ -75,7 +75,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(10000), 1*60) 
+    done = tree.grow_to(final_pose, trange(1000), 1*60, finish=False) 
     print(f"{done=}")
 
     if plot:

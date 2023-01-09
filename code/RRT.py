@@ -213,8 +213,8 @@ class Tree():
                     if neighbouring_node_ids.shape[0] > 0:  
                         self.rewire(neighbouring_node_ids)
                     
-                done, path = self.connect_to_newest_node(end_pose)
-                
+                done_single, path = self.connect_to_newest_node(end_pose)
+                done |= done_single
                 if finish and done:
                     print("Found a path.")
                     break
