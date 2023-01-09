@@ -200,6 +200,12 @@ class Path():
         self.length = 0
         if segments is not None:
             self.segments = segments
+            offsets = np.array([segment.point_start for segment in segments[1:]]) - np.array([segment.point_end for segment in segments[:-1]])
+            error = np.linalg.norm(offsets)
+            if error > 0.1:
+                print("Path doesn't make sense!")
+                self.print()
+                exit()
         for segment in self.segments:
             self.length += segment.length
         self.d_cumulative = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
@@ -211,6 +217,7 @@ class Path():
         else:
             print(f"start position = {self.segments[0].point_start}")
             for segment in self.segments:
+                print(f"{segment.point_start=}, {segment.point_end=}")
                 print(f"distance     = {segment.length:.04}, curve = {segment.curvature:.04}")
             print(f"end position = {self.segments[-1].point_end}")
             print(f"Total = {self.length}")
