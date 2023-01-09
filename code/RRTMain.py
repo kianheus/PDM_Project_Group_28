@@ -332,7 +332,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     
     # only check if path collides with moving obstacles, because normal path is already collision free
     #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
-    env_map = RRT.Map(moving_obstacles, 0.2, workspace_center, workspace_size)
+    env_map = RRT.Map(moving_obstacles, workspace_center, workspace_size, vehicle_radius=consts.vehicle_radius)
     
     # only check all future points for collisions
     prev_points = points.copy()
@@ -372,18 +372,10 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             
             # use smaller map to speed up RRT
             workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
-            #workspace_center = np.array([0, 0]) # Coordinate center of workspace
             workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace CHECK FOR VERTICAL OBSTACLES
-            
-            #workspace_limit = workspace_size/2+workspace_center
-            
+        
             # now use all obstacles
-            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.2, workspace_center, workspace_size) # checks whole space, noy only workspace
-            
-            #miniRRT(state, obstacles, moving_obstacles, start, goal)
-            
-            turning_radius = 0.8
-            collision_resolution = 0.05
+            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), workspace_center, workspace_size, vehicle_radius=consts.vehicle_radius) # checks whole space, noy only workspace
         
             # Initialise a RR tree
             tree = RRT.Tree(env_map, initial_pose=start, consts=consts)
@@ -419,8 +411,6 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # RRT.plot_pose(ax, first_coliding_point, color='red')
             # ax.axis("equal")
             # plt.show()
-            
-        
     else:
         print("follow normal path")
     
