@@ -76,7 +76,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(1000), 1*60, finish=False, star=True) #2819
+    done = tree.grow_to(final_pose, trange(2000), 1*60, finish=False, star=True) #2819
     print(f"{done=}")
 
     tree.print()
@@ -87,7 +87,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
 
         # plot the edges of the tree
         for edge in tree.edges:
-            edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
+            edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
     # backtrack the tree to generate a path and a list of points
     points = np.array([[0.0, 0.0, 0.0]])
