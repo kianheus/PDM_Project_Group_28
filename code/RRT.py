@@ -166,8 +166,13 @@ class Tree():
     '''
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
-    def grow_single(self):
-        return self.add_path_to(self.map.random_pose())
+    def grow_single(self, set_angle=None):
+        if set_angle is None:
+            return self.add_path_to(self.map.random_pose())
+        else:
+            new_pose = self.map.random_pose()
+            new_pose[2] = set_angle
+            return self.add_path_to(new_pose, modify_angle=False)
 
 
     '''
@@ -176,7 +181,7 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False, set_angle=None):
         close_time=time.time() + max_seconds
         added_node = True
         done = False
@@ -195,7 +200,7 @@ class Tree():
                 if finish and done:
                     print("Found a path.")
                     break
-            added_node, neighbouring_node_ids = self.grow_single()
+            added_node, neighbouring_node_ids = self.grow_single(set_angle=set_angle)
         
         return done
 

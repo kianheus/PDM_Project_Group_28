@@ -25,7 +25,7 @@ import Approximator
 
 
 
-# np.random.seed(28)
+np.random.seed(69)
 
 
 class consts():
@@ -34,7 +34,8 @@ class consts():
     point_resolution = 0.05
     vehicle_radius = 0.2
     offset_m = 1.0  # offset in metres
-    offset = offset_m // point_resolution # amount of points offsetted from moving obstacle   
+    offset = offset_m // point_resolution # amount of points offsetted from moving obstacle
+    collision_offset_m = 3.0
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
@@ -373,7 +374,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             exit()
 
         # check if distane between goal and state is within the lookahead distance
-        if np.linalg.norm(start[:2] - first_coliding_point[:2]) < 3:
+        if np.linalg.norm(start[:2] - first_coliding_point[:2]) < consts.collision_offset_m:
             print("collision within range")
             
             # use smaller map to speed up RRT
@@ -385,9 +386,13 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
         
             # Initialise a RR tree
             tree = RRT.Tree(env_map, initial_pose=start, consts=consts)
+
+            new_angle = np.arctan2(np.cos(start[2]) + np.cos(goal[2]), np.sin(start[2]) + np.sin(goal[2]))
+
+            print(f"{new_angle=}")
         
             # Grow the tree to the final pose
-            done = tree.grow_to(goal, trange(200), 0.25, star=False)
+            done = tree.grow_to(goal, trange(200), 0.25, star=False, set_angle=new_angle)
             
             # fig, ax = plt.subplots()
             # env_map.plot(ax)    # plot the environment (obstacles)   
