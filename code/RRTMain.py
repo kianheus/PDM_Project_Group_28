@@ -40,7 +40,7 @@ class consts():
     workspace_size = np.array([30, 30])
 
 #Define start pose
-start_pose = RRT.pose_deg(-1.5, 0, 0)
+start_pose = RRT.pose_deg(-1.5, 5, 180)
 
 # -----------------------------------------------------------------------------
 # Define main fucntion

@@ -234,7 +234,7 @@ class Tree():
                     break
             added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=informed, set_angle=set_angle)
         if not finish:
-            done, _ = self.add_path_to(end_pose, modify_angle=False)
+            done, _ = self.add_path_to(end_pose, modify_angle=False, n_closest=100, i_break=40)
         return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
