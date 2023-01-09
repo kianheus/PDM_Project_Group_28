@@ -166,7 +166,7 @@ class Tree():
     '''
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
-    def grow_single(self, end_pose, informed = True):
+    def grow_single(self, end_pose, informed = False):
         if informed:
             valid_node = False
             while valid_node == False:
@@ -213,7 +213,7 @@ class Tree():
                 if finish and done:
                     print("Found a path.")
                     break
-            added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=True)
+            added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=False)
         
         return done
 
@@ -377,6 +377,7 @@ class Tree():
                 self.nodes[idx].parent_edge.path = path
                 self.nodes[idx].distance_from_origin = new_neighbouring_distance_origin
                 self.nodes[idx].distance_from_parent = path.length
+                self.node_distances[idx] = self.nodes[idx].distance_from_origin
                 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
@@ -387,7 +388,6 @@ class Tree():
         child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
         child.children_nodes
         for grandchild in child.children_nodes:
-            #print("Hello")
             self.distance_update(child, grandchild) 
 
 
