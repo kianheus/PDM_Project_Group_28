@@ -2,26 +2,26 @@
 # Import needed packages
 # -----------------------------------------------------------------------------
 
-import pygame
-
 import sys
-sys.path.append("../mujoco")
-sys.path.append("mujoco")
 
-import carenv
 import time
 import numpy as np
 
 from tqdm import tqdm, trange
 from sys import exit
-from RRT import RRTPlot
-import RRT
-import Steering as steer
+
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
 
+sys.path.append("../mujoco")
+
+# Import from custom files
+import RRT
+import Steering as steer
+import carenv
 import Approximator
+
 
 
 
@@ -179,35 +179,6 @@ def test_approximator(obstacles):
 
     print(f"{dist_true=}")
     print(f"{dist_approximated=}")
-
-
-
-def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles):
-    pygame.init()
-    workspace = RRTPlot(start_coord,
-                        goal_coord,
-                        workspace_size,
-                        workspace_center,
-                        obstacles)
-
-    workspace.draw_workspace()
-    pygame.display.update()
-    pygame.event.clear()
-    pygame.event.wait(0)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            if event.type==pygame.KEYDOWN:
-                if event.key==pygame.K_c:
-                    intro=False
-                if event.key==pygame.K_q:
-                    pygame.quit()
-                    exit()
-
-
 
 
 # Fabio    

@@ -2,7 +2,6 @@
 # Import needed packages
 # -----------------------------------------------------------------------------
 
-import pygame
 import numpy as np
 import Steering as steer
 from tqdm import tqdm, trange
@@ -424,112 +423,6 @@ class Tree():
         child.children_nodes
         for grandchild in child.children_nodes:
             self.distance_update(child, grandchild) 
-
-
-# -----------------------------------------------------------------------------
-# Define class that visualizes the RRT algorithm and final path
-# -----------------------------------------------------------------------------
-
-class RRTPlot():
-
-    def __init__(self, start, goal, workspace_size, workspace_center, obstacles):
-
-        # Define start position and orientation of the robot
-        start_coords = to_pygame_coords(start[:2], workspace_size)
-        self.start_x = meters2pixels(start_coords[0])
-        self.start_y = meters2pixels(start_coords[1])
-        self.start_theta = start[2]
-
-        # Define goal position and orientation of the robot
-        goal_coords = to_pygame_coords(goal[:2], workspace_size)
-        self.goal_x = meters2pixels(goal_coords[0])
-        self.goal_y = meters2pixels(goal_coords[1])
-        self.goal_theta = goal[2]
-
-        # Define workspace dimensions: length (x) and width (y)
-        self.workspace_x = meters2pixels(workspace_size[0])
-        self.workspace_y = meters2pixels(workspace_size[1])
-        self.workspace_size = workspace_size
-
-        # Define center of the workspace
-        self.workspace_cx = meters2pixels(workspace_center[0])
-        self.workspace_cy = meters2pixels(workspace_center[1])
-
-        # Read the obstacle information
-        self.obstacles = obstacles
-
-        # Define some colours to be used
-        self.green = (0, 255, 0)
-        self.red = (255, 0, 0)
-        self.white = (255, 255, 255)
-        self.black = (0, 0, 0)
-
-        # Define the visuals of the workspace
-        self.workspace = pygame.display.set_mode(size=(self.workspace_x, self.workspace_y))
-        self.workspace.fill(self.white)
-        self.nodeRad = 0
-        self.nodeThickness = 0
-        self.edgeThickness = 1
-
-    def draw_workspace(self):
-        # Draw start position of robot
-        pygame.draw.circle(self.workspace, self.green, center = (self.start_x, self.start_y), radius = self.nodeRad+10.0)
-
-        # Draw goal position of robot
-        pygame.draw.circle(self.workspace, self.red, center = (self.goal_x, self.goal_y), radius = self.nodeRad+10.0)
-
-        # Draw obstacles
-        self.draw_obstacles()
-
-    def draw_obstacles(self):
-
-        for i in range(len(self.obstacles)):
-
-            obstacle_coords = to_pygame_coords(self.obstacles[i,:2], self.workspace_size)
-            obstacle_x = meters2pixels(obstacle_coords[0])
-            obstacle_y = meters2pixels(obstacle_coords[1])
-            obstacle_theta = self.obstacles[i, 2]
-            obstacle_l = meters2pixels(self.obstacles[i, 3])
-            obstacle_w = meters2pixels(self.obstacles[i, 4])
-
-            # Tranform reference point from cenetr of the rectangle to top-left corner of rectangle
-            obstacle_left = obstacle_x - obstacle_l/2
-            obstacle_top = obstacle_y - obstacle_w/2
-
-            pygame.draw.rect(self.workspace, self.black, pygame.Rect(obstacle_left, obstacle_top, obstacle_l, obstacle_w))
-
-# -----------------------------------------------------------------------------
-# Define some auxiliary functions
-# -----------------------------------------------------------------------------
-
-def meters2pixels(x):
-   return x * 30
-
-def to_pygame_coords(point, window_size):
-    
-    """
-    This function coverts the given point coordinates which are given with 
-    respect to the center of the window to the reference frame used in pygame.
-    This pygame reference frame has its origin in the top left edge of the window
-    """
-    x_offset = window_size[0]/2
-    y_offset = window_size[1]/2
-    
-    x = point[0]
-    y = point[1]
-    
-    if y > 0:
-        y_new = y_offset - y
-    else:
-        y_new = y_offset + abs(y)
-
-    if x > 0:
-        x_new = x_offset + x
-    else:
-        x_new = x_offset - abs(x)
-    new_point = [x_new, y_new]
-    return new_point
-
 
 def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3
