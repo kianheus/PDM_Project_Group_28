@@ -132,7 +132,7 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
 
     # final_poses = [ RRT.pose_deg(2.5, 7.0, 0) ]
 
-    grow = True
+    grow = False
 
     if grow:
         # Initialise a RR tree
