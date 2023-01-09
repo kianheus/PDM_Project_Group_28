@@ -45,16 +45,18 @@ start_pose = RRT.pose_deg(-1.5, 5, 180)
 
 def main():
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
     # [x, y, rotation, length, width]
 
-
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    # points, ax = test_rrt(obstacles, initial_pose)
-    # mujoco_sim(env, points)
 
-    test_rrt_blind(obstacles)
+    points, ax = test_rrt(obstacles, initial_pose)
+    env = carenv.Car(render=True)
+    mujoco_sim(env, points)
+
+
+    # test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
