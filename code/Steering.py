@@ -201,7 +201,7 @@ class Path():
         if segments is not None:
             self.segments = segments
             offsets = np.array([segment.point_start for segment in segments[1:]]) - np.array([segment.point_end for segment in segments[:-1]])
-            error = np.linalg.norm(offsets)
+            error = np.linalg.norm(offsets[:2])
             if error > 0.1:
                 print("Path doesn't make sense!")
                 self.print()

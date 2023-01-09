@@ -25,7 +25,7 @@ import Approximator
 
 
 
-np.random.seed(69)
+# np.random.seed(69)
 
 
 class consts():
@@ -54,11 +54,11 @@ def main():
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
 
-    points, ax = test_rrt(obstacles, initial_pose)
-    env = carenv.Car(render=True)
-    mujoco_sim(env, points)
+    # points, ax = test_rrt(obstacles, initial_pose)
+    # env = carenv.Car(render=True)
+    # mujoco_sim(env, points)
 
-    #test_rrt_blind(obstacles)
+    test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
