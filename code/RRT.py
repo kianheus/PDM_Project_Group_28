@@ -30,10 +30,13 @@ class Node():
     def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
         self.pose = pose
         self.parent_node = parent_node
+        self.children_nodes : list[Node] = []
         self.parent_edge = parent_edge
+        self.distance_from_parent = distance_from_parent
         self.distance_from_origin = distance_from_parent
         if parent_node is not None:
             # print(f"{parent_node=}")
+            parent_node.children_nodes.append(self)
             self.distance_from_origin += parent_node.distance_from_origin
 
 
@@ -111,6 +114,7 @@ class Tree():
         self.node_distances = np.array([0])
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
+        self.dummy_counter = 0
 
     def print(self):
         print(f"Tree:")
@@ -125,11 +129,11 @@ class Tree():
         for segment in path.segments:
             path_new = steer.PathSimple(segment)
             new_edge = Edge(node, path_new)
+            node = new_edge.end_node
+            self.nodes.append(node)
             self.edges.append(new_edge)
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
             self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
-            node = new_edge.end_node
-            self.nodes.append(node)
         # print("Added new node")
 
     '''
@@ -145,29 +149,52 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, informed = False):
         close_time=time.time() + max_seconds
         added_node = True
         done = False
+        neighbouring_node_ids = np.array([])
+        shortest_length = 1000000 
+        best_path = []
         for i in iter:
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
             if added_node:
-                done = self.connect_to_newest_node(end_pose)
-                if done:
-                    print("Found a path.")
-                    break
-            added_node = self.grow_single()
-        return done
+                if neighbouring_node_ids.shape[0] > 0:  
+                    self.rewire(neighbouring_node_ids)
+                    
+                done, path = self.connect_to_newest_node(end_pose)
+                
+                if path.length < shortest_length:
+                    shortest_length = path.length
+                    best_path = path
+                #if done:
+                    #print("Found a path.")
+                    #break
+            added_node, neighbouring_node_ids = self.grow_single()
+        
+        return True, best_path
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
         close_time=time.time() + max_seconds
+        added_node = True
+        neighbouring_node_ids = np.array([])
         for i in iter:
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
-            self.grow_single()
+            if added_node:
+                if neighbouring_node_ids.shape[0] > 0:  
+                    self.rewire(neighbouring_node_ids)
+                    
+                #☻done, path = self.connect_to_newest_node(end_pose)
+                
+                #if path.length < shortest_length:
+                    #shortest_length = path.length
+                    #best_path = path
+                    
+            added_node, neighbouring_node_ids = self.grow_single()
         return
 
 
@@ -222,13 +249,13 @@ class Tree():
         discrete_path = path.interpolate(d=self.collision_resolution)
         collision = self.map.collision_check(discrete_path)
         if collision:
-            return False
+            return False, path
         # add path to tree
         if len(self.edges) > 0:
             self.add_node(self.edges[-1].end_node, path)
         else:
             self.add_node(self.base_node, path)
-        return True
+        return True, path
 
 
     '''
@@ -236,12 +263,8 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
-        distances = np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1) + self.node_distances
-        closest_distance = np.min(distances)
-        upper_bound = closest_distance + 7/3 * np.pi * self.turning_radius
-        valid_indices = distances <= upper_bound
-        valid_indices = np.arange(len(valid_indices))[valid_indices]
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool: #AND A np.ndarray:
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10] # Select 10 closest nodes
 
         potential_steering_paths : list[steer.Path] = []
         angle_random = new_pose[2]
@@ -253,12 +276,9 @@ class Tree():
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
             potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
-
-        shortest_path_idxs = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+        shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
-        for i, shortest_path_idx in enumerate(shortest_path_idxs):
-            if i > 4:
-                break
+        for i, shortest_path_idx in enumerate(shortest_path_ids):
 
             steering_path = potential_steering_paths[shortest_path_idx]
             parent_coord_idx = valid_indices[shortest_path_idx]
@@ -274,33 +294,69 @@ class Tree():
             else:
                 self.add_node(self.edges[parent_coord_idx-1].end_node, steering_path)
 
-            return True
-        return False
+            return True, valid_indices
+        return False, valid_indices 
     
-"""
-This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
-radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
-nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
-"""    
     
-    def rewire(self, current_pose, near_node_idx):
-        distances = []
-        for i in near_node_idx:
-            near_node = self.nodes[i]
-            near_pose = self.node_poses[i]
-            near_path = steer.optimal_path(near_pose, current_pose, self.turning_radius)
-            discrete_near_path = path.interpolate(d=self.collision_resolution)
+    def rewire(self, neighbouring_node_ids):
+        
+        added_node = self.nodes[-1]
+        added_pose = self.node_poses[-1]
+        
+        for idx in neighbouring_node_ids:
             
-            near_edge = Edge(near_node, near_path)
-            # near_path_distance = # Here calcualte the distance in Dubin's space of the 
-            collision = self.map.collision_check(discrete_near_path)
-        
-            if collision == False:
+            neighbouring_pose = self.node_poses[idx] # read the pose
+            neighbouring_distance_origin = self.node_distances[idx] # read the previously recorded distance of the neighbour to the origin
+            
+            path = steer.optimal_path(added_pose, neighbouring_pose, self.turning_radius)
+            
+            new_neighbouring_distance_origin = added_node.distance_from_origin + path.length
+            
+            
+            if new_neighbouring_distance_origin < neighbouring_distance_origin:
+                #self.dummy_counter += 1
+                #print(f"{self.dummy_counter=}")
                 
-        
-        
-        #print(f"{near_pose=}")            
-        pass
+                discrete_path = path.interpolate(d=self.collision_resolution)
+                
+                collision = self.map.collision_check(discrete_path)
+                if collision:
+                    continue
+                
+                # Update the parameters of the neighbour we are rewiring to
+                self.nodes[idx].parent_node.children_nodes.remove(self.nodes[idx]) # remove old parent
+                self.nodes[idx].parent_node = added_node
+                self.nodes[idx].parent_node.children_nodes.append(self.nodes[idx]) # assign new parent
+                self.nodes[idx].parent_edge.start_node = added_node
+                self.nodes[idx].parent_edge.path = path
+                self.nodes[idx].distance_from_origin = new_neighbouring_distance_origin
+                self.nodes[idx].distance_from_parent = path.length
+                
+                for child in self.nodes[idx].children_nodes:
+                    self.distance_update(self.nodes[idx], child)
+            
+                
+                
+            
+            #self.node_poses = np.delete(self.node_poses, idx, axis=0) # delete the pose from node_poses
+            #neighbouring_node = self.nodes.pop(idx) # remove and store the node from the node list
+            #self.nodes.insert(idx, neighbouring_node)
+            #_, __ = self.add_path_to(neighbouring_pose, True, idx)
+            
+            # TODO: Remove all edges which have neighbouring_node as self.end_node
+
+            #new_neighbour = self.nodes[idx]
+            #new_neighbour.children_nodes = neighbouring_node.children_nodes
+            #for child in neighbouring_node.children_nodes:
+                #self.distance_update(neighbouring_node, child)
+
+
+    def distance_update(self, parent : Node, child : Node):
+        child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
+        child.children_nodes
+        for grandchild in child.children_nodes:
+            #print("Hello")
+            self.distance_update(child, grandchild) 
 
 
 # -----------------------------------------------------------------------------

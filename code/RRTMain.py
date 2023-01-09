@@ -24,39 +24,45 @@ from matplotlib import patches
 import Approximator
 
 
+
+
+
+np.random.seed(28)
+
+
 # -----------------------------------------------------------------------------
 # Define main fucntion
 # -----------------------------------------------------------------------------
 
 def main():
-    
+
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
     state, obstacles = env.reset() # start with reset
     obstacles[:,3:] = obstacles[:,3:]*2 # [x, y, rotation, length, width]
 
     start_time = time.time()
-    
+
     # Define some sets of cooridnates
     workspace_center = np.array([0, 0]) # Coordinate center of workspace
     workspace_size = np.array([30, 30]) # Dimensions of workspace
     start_coord = state # Starting position and orientation of robot (x, y, theta)
     goal_coord = np.array([0, 10.05, 0]) # Goal position and orientation of robot (x, y, theta)
-    
+
     # Computational variables
     radius = 0.8
     collision_resolution = 0.05
-    
+
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
     # points = test_rrt(obstacles, workspace_center, workspace_size, radius, collision_resolution)
     #mujoco_sim(env, points)
 
-    #test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+    test_rrt_blind(obstacles, workspace_center, workspace_size, radius, collision_resolution)
+
 
     test_approximator(obstacles, workspace_center, workspace_size, radius)
 
 
-    
 # Kian, Thomas
 def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collision_resolution):
 
@@ -69,11 +75,10 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
-    
-    # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(1000), 180)
-    #tree.rewire(final_pose))
 
+    # Grow the tree to the final pose
+    done, path = tree.grow_to(final_pose, trange(500), 180, star = True, informed = False)
+    
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
 
@@ -84,12 +89,12 @@ def test_rrt(obstacles, workspace_center, workspace_size, turning_radius, collis
     # backtrack the tree to generate a path and a list of points
     points = np.array([[0.0, 0.0, 0.0]])
     if done:
-        path = tree.path_to(final_pose)
+        #path = tree.path_to(final_pose)
         path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
         path.print()
         points = path.interpolate_poses(d=0.05)
         plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-        
+
     # plot the start and endpoints
     steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
     steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
@@ -109,14 +114,19 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
 
     # Define start and end poses
     initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-    final_pose = RRT.pose_deg(2.5, 5.0, 180)
+    final_pose = RRT.pose_deg(1.0, 1.0, 0)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, turning_radius=turning_radius, initial_pose=initial_pose, collision_resolution=collision_resolution)
-    
-    # Grow the tree
-    tree.grow_blind(trange(10000), 1*60)
 
+    # Grow the tree
+    tree.grow_blind(trange(100), 1*60)
+    
+    tree.add_path_to(final_pose)
+    print(tree.get_node(final_pose))
+  
+    path = tree.path_to(final_pose)
+    
     tree.print()
 
     fig, ax = plt.subplots()
@@ -133,6 +143,11 @@ def test_rrt_blind(obstacles, workspace_center, workspace_size, turning_radius, 
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
     plt.axis("equal")
+    
+    path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+    path.print()
+    points = path.interpolate_poses(d=0.05)
+    plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
     plt.show()
 
@@ -168,7 +183,7 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
                         workspace_size,
                         workspace_center,
                         obstacles)
-    
+
     workspace.draw_workspace()
     pygame.display.update()
     pygame.event.clear()
@@ -188,16 +203,16 @@ def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obsta
 
 
 
-# Fabio                
-def mujoco_sim(env, points):  
-    
+# Fabio
+def mujoco_sim(env, points):
+
     #function used to bound output of controllers
     def bound(low, high, value):
          return max(low, min(high, value))
 
     #function for PID controller
     class PIDcontroller():
-        
+
         def __init__(self, kp, ki, kd):
             #initialise P, I, D factors
             self.kp = kp
@@ -206,19 +221,19 @@ def mujoco_sim(env, points):
             self.pe = 0
             self.se = 0
             self.dt = 0.01 #loop runs at 100 Hz
-            
+
         def pid(self, e):
-           
+
             self.se = self.se + e*self.dt # intergrated error
-             
-            P = self.kp*e 
+
+            P = self.kp*e
             I = self.ki*self.se # forward euler
-            D = self.kd*(e-self.pe)/self.dt # forward difference 
-            
+            D = self.kd*(e-self.pe)/self.dt # forward difference
+
             output = P + I + D # output of pid controller
-            
+
             self.pe = e # previous error used in differentiation
-            
+
             return output
 
     # initialise pid controllers
@@ -232,53 +247,53 @@ def mujoco_sim(env, points):
     n = 0
     #simulate for 100 s
     while True:
-        
+
         ########################## desired goals generated by path planner ########################
         thetar = points[i,2]# desired heading angle for following path
         pr = points[i, 0:2] #desired point where car needs to go
-        
+
         ########################## heading + longitudal + lateral error ##########################
         #heading
         theta = state[2]
-        theta_error = ((thetar-theta+np.pi) % (2*np.pi)) - np.pi #multiple rotations without sudden gap between 0 and 2pi   
-        
+        theta_error = ((thetar-theta+np.pi) % (2*np.pi)) - np.pi #multiple rotations without sudden gap between 0 and 2pi
+
         #print(obstacles)
         #longitudal + lateral
-        p = np.array([state[0], state[1]]) 
-        distance = np.linalg.norm(pr - p) #total distance 
+        p = np.array([state[0], state[1]])
+        distance = np.linalg.norm(pr - p) #total distance
         angle = np.arctan2(p[1]-pr[1],p[0]-pr[0]) #subtract reference
-        difference_angle = thetar - angle    
-        
+        difference_angle = thetar - angle
+
         lateral_error = -np.sin(difference_angle)*distance
         longitudal_error = np.cos(difference_angle)*distance
-        
+
         ########################## PID ##########################
         steering_angle_theta = theta_pid.pid(theta_error)
         steering_angle_lateral = -lateral_pid.pid(lateral_error)
-        throttle = longitudal_pid.pid(longitudal_error)       
-        
+        throttle = longitudal_pid.pid(longitudal_error)
+
         ########################## Bounds and combining output of controlllers ##########################
         #combine steering input
-        steering_angle = steering_angle_lateral + steering_angle_theta 
-        
+        steering_angle = steering_angle_lateral + steering_angle_theta
+
         #bounds
         throttle = bound(-5, 5, throttle)
         steering_angle = bound(-0.38, 0.38, steering_angle)
-        
+
         ########################## sim ##########################
         action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
         state, obstacles, moving_obstacles = env.step(action) #set step in environment
         env.render(mode = True) # turn rendering on or off
 
-        ########################## reset after 10 seconds, this can be changed ##########################   
+        ########################## reset after 10 seconds, this can be changed ##########################
         if env.get_time() > 20:
             env.close_window()
             break
-        
+
         if n % 2 == 0:
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
-        
+
         n = n+1
         time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
 
@@ -286,4 +301,3 @@ def mujoco_sim(env, points):
 
 if __name__ == '__main__':
     main()
-
