@@ -30,12 +30,13 @@ class Car(core.Env):
         #extract car and world data
         data = self.get_sensor_data()
         obstacles = self.get_obstacles_simple()
+        moving_obstacles = self.get_moving_obstacle()
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
         
         self.counter = 0   
         self.bedspeed = 1
 
-        return state, obstacles
+        return state, obstacles, moving_obstacles
 
     def step(self, action):
         
@@ -93,23 +94,24 @@ class Car(core.Env):
                         np.hstack(([self.data.body('wallhall6').xpos[0:2], self.quat_to_degree(self.data.body('wallhall6').xquat), self.model.geom('wallhall6').size[0:2]])),
                         np.hstack(([self.data.body('wallhall7').xpos[0:2], self.quat_to_degree(self.data.body('wallhall7').xquat), self.model.geom('wallhall7').size[0:2]])),
                         np.hstack(([self.data.body('wallhall8').xpos[0:2], self.quat_to_degree(self.data.body('wallhall8').xquat), self.model.geom('wallhall8').size[0:2]])),
-                        np.hstack(([self.data.body('hospitalbed1').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed1').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed2').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed2').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed3').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed3').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed4').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed4').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed5').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed5').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed6').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed6').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed7').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed7').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed8').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed8').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed9').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed9').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed10').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed10').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed11').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed11').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('hospitalbed12').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed12').xquat), np.array([1,0.5])]))])
-
+                        np.hstack(([self.data.body('hospitalbed1').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed1').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed2').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed2').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed3').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed3').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed4').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed4').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed5').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed5').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed6').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed6').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed7').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed7').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed8').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed8').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed9').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed9').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed10').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed10').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed11').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed11').xquat), np.array([1.1,0.55])])),
+                        np.hstack(([self.data.body('hospitalbed12').xpos[0:2], self.quat_to_degree(self.data.body('hospitalbed12').xquat), np.array([1.1,0.55])]))])
+        obs[:,3:] = obs[:,3:]*2 
         return obs
     
     def get_moving_obstacle(self): 
         obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
+        obs[:,3:] = obs[:,3:]*2 
         return obs
     
     def get_time(self):

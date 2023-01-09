@@ -9,6 +9,7 @@ from tqdm import tqdm, trange
 from matplotlib import pyplot as plt
 from matplotlib import patches
 import time
+import Approximator
 
 # -----------------------------------------------------------------------------
 # Define class that executes the RRT algorithm
@@ -58,20 +59,37 @@ The environment map that is being planned for is a collection of obstacles and a
 The map can be used to check for collisions, as well as generating random positions or poses.
 '''
 class Map():
-    def __init__(self, obstacles : np.ndarray, vehicle_radius : float, workspace_center, workspace_size):
+    def __init__(self, obstacles : np.ndarray, vehicle_radius : float = None, workspace_center = None, workspace_size = None, consts = None):
+        if consts is not None:
+            if vehicle_radius is None:
+                vehicle_radius = consts.vehicle_radius
+            if workspace_center is None:
+                workspace_center = consts.workspace_center
+            if workspace_size is None:
+                workspace_size = consts.workspace_size
         self.obstacles = obstacles
         self.vehicle_radius = vehicle_radius
         self.workspace_center = workspace_center
         self.workspace_size = workspace_size
 
-    def collision_check(self, points : np.ndarray) -> bool:
+        self.obstacle_1 = np.atleast_2d(self.obstacles[:,0] - self.obstacles[:,3]/2)
+        self.obstacle_2 = np.atleast_2d(self.obstacles[:,0] + self.obstacles[:,3]/2)
+        self.obstacle_3 = np.atleast_2d(self.obstacles[:,1] - self.obstacles[:,4]/2)
+        self.obstacle_4 = np.atleast_2d( self.obstacles[:,1] + self.obstacles[:,4]/2)
+
+    def collision_check_array(self, points : np.ndarray) -> np.ndarray:
         points = np.atleast_2d(points)
-        for point in points:
-            for obstacle in self.obstacles:
-                if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                    and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                    return True
-        return False
+        points_x = np.atleast_2d(points[:,0]).T
+        points_y = np.atleast_2d(points[:,1]).T
+        a = points_x + self.vehicle_radius > self.obstacle_1
+        a &= points_x - self.vehicle_radius < self.obstacle_2
+        a &= points_y + self.vehicle_radius > self.obstacle_3
+        a &= points_y - self.vehicle_radius < self.obstacle_4
+        return a.any(axis=1)
+
+    def collision_check(self, points : np.ndarray) -> bool:
+        return self.collision_check_array(points).any()
+
 
     def collision_check_single(self, point : np.ndarray) -> bool:
         for obstacle in self.obstacles:
@@ -79,6 +97,8 @@ class Map():
                 and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
                 return True
         return False
+    
+    
 
     def random_position(self) -> np.ndarray:
         collision = True
@@ -105,7 +125,12 @@ The tree has a list of node poses (not node objects), which can be used to rapid
 The tree also contains a collision map and parameters of the search
 '''
 class Tree():
-    def __init__(self, map : Map, turning_radius : float, initial_pose : np.ndarray, collision_resolution : float):
+    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None):
+        if consts is not None:
+            if turning_radius is None:
+                turning_radius = consts.turning_radius
+            if collision_resolution is None:
+                collision_resolution = consts.collision_resolution
         self.map = map
         self.base_node = Node(initial_pose)
         self.edges : list[Edge] = []
@@ -115,6 +140,8 @@ class Tree():
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
         self.dummy_counter = 0
+        self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
+
 
     def print(self):
         print(f"Tree:")
@@ -149,7 +176,7 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, informed = False):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False):
         close_time=time.time() + max_seconds
         added_node = True
         done = False
@@ -161,17 +188,18 @@ class Tree():
                 print("Time limit met, stopping.")
                 break
             if added_node:
-                if neighbouring_node_ids.shape[0] > 0:  
-                    self.rewire(neighbouring_node_ids)
+                if star:
+                    if neighbouring_node_ids.shape[0] > 0:  
+                        self.rewire(neighbouring_node_ids)
                     
                 done, path = self.connect_to_newest_node(end_pose)
                 
                 if path.length < shortest_length:
                     shortest_length = path.length
                     best_path = path
-                #if done:
-                    #print("Found a path.")
-                    #break
+                if finish and done:
+                    print("Found a path.")
+                    break
             added_node, neighbouring_node_ids = self.grow_single()
         
         return True, best_path
@@ -263,10 +291,11 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool: #AND A np.ndarray:
-        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:10] # Select 10 closest nodes
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True) -> bool:
+        valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:25] # Select 10 closest nodes
 
-        potential_steering_paths : list[steer.Path] = []
+
+        path_dist_approx = []
         angle_random = new_pose[2]
 
         for idx in valid_indices:
@@ -275,12 +304,17 @@ class Tree():
                 angle_displacement = np.arctan2(displacement[1], displacement[0])
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
-            potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
-        shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
+            # potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
+            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Interpolated))
+
+        shortest_path_ids = np.argsort([dist + self.node_distances[valid_indices][i] for i, dist in enumerate(path_dist_approx)])
+        # shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
         
         for i, shortest_path_idx in enumerate(shortest_path_ids):
-
-            steering_path = potential_steering_paths[shortest_path_idx]
+            if i>10:
+                break
+            steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
+            # steering_path = potential_steering_paths[shortest_path_idx]
             parent_coord_idx = valid_indices[shortest_path_idx]
 
             discrete_path = steering_path.interpolate(d=self.collision_resolution)
@@ -297,7 +331,12 @@ class Tree():
             return True, valid_indices
         return False, valid_indices 
     
-    
+
+    """
+    This function takes in the current pose and a list of indeces corresponding to all the nodes of the tree within a
+    radius r of the current node. Then, it calculates the distance of the Dubin's path from the current node to all the nearby
+    nodes and it connects the current node to the nearby node that is nearest (in Dubin distance) 
+    """    
     def rewire(self, neighbouring_node_ids):
         
         added_node = self.nodes[-1]
@@ -334,21 +373,7 @@ class Tree():
                 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
-            
-                
-                
-            
-            #self.node_poses = np.delete(self.node_poses, idx, axis=0) # delete the pose from node_poses
-            #neighbouring_node = self.nodes.pop(idx) # remove and store the node from the node list
-            #self.nodes.insert(idx, neighbouring_node)
-            #_, __ = self.add_path_to(neighbouring_pose, True, idx)
-            
-            # TODO: Remove all edges which have neighbouring_node as self.end_node
 
-            #new_neighbour = self.nodes[idx]
-            #new_neighbour.children_nodes = neighbouring_node.children_nodes
-            #for child in neighbouring_node.children_nodes:
-                #self.distance_update(neighbouring_node, child)
 
 
     def distance_update(self, parent : Node, child : Node):
@@ -464,3 +489,11 @@ def to_pygame_coords(point, window_size):
     return new_point
 
 
+def plot_pose(ax, pose, length=0.1, **kwargs):
+    kwargs["linewidth"] = 3
+    ax.scatter(pose[0], pose[1], **kwargs)
+    kwargs.pop("s", None)
+    ax.plot([pose[0], pose[0] + np.cos(pose[2])*length], [pose[1], pose[1] + np.sin(pose[2])*length], **kwargs)
+
+def plot_points(ax, points, **kwargs):
+    plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]))

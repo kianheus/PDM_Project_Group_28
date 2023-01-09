@@ -72,7 +72,10 @@ class Line(Segment):
         self.curvature = 0.0
 
     def interpolate_single(self, b):
-        return self.point_start + b * (self.point_end - self.point_start)
+        return (self.point_start + b * (self.point_end - self.point_start))[0:2]
+
+    def interpolate_multi(self, bb):
+        return (np.atleast_2d(self.point_start[0:2]) + np.atleast_2d(bb).T * np.atleast_2d((self.point_end[0:2] - self.point_start[0:2])))
 
     def plot(self, ax, **kwargs):
         kwargs.pop("s", None)
@@ -125,11 +128,11 @@ class Arc(Segment):
         self.angle_start = np.arctan2(self.radius_vector_start[1], self.radius_vector_start[0])
         self.point_start = self.point_centre + self.radius_vector_start
 
-        ang_s, ang_e = self.angle_start, self.angle_end
+        self.ang_s, self.ang_e = self.angle_start, self.angle_end
         if self.signed_radius < 0:
-            ang_s, ang_e = ang_e, ang_s
+            self.ang_s, self.ang_e = self.ang_e, self.ang_s
 
-        self.angle = np.sign(-self.signed_radius) * (((ang_e  - ang_s)) % (2*np.pi))
+        self.angle = np.sign(-self.signed_radius) * (((self.ang_e  - self.ang_s)) % (2*np.pi))
 
         self.length = np.abs(self.angle) * self.radius
 
@@ -150,6 +153,16 @@ class Arc(Segment):
         delta = np.array([np.cos(ang), np.sin(ang)]) * self.radius
         point = self.point_centre[0:2] + delta
         return point
+
+    def interpolate_multi(self, bb):
+        if np.sign(self.signed_radius) < 0:
+            bb = 1 - bb
+        bb *= np.sign(-self.signed_radius)
+        
+        angs = bb * self.angle + self.ang_s  # angle of point in arc
+        deltas = np.array([np.cos(angs), np.sin(angs)]) * self.radius
+        points = np.atleast_2d(self.point_centre[0:2]) + deltas.T
+        return points
 
     def plot(self, ax, **kwargs):
         kwargs = {(key if key != 'color' else 'ec'): value for key, value in kwargs.items()}
@@ -189,6 +202,8 @@ class Path():
             self.segments = segments
         for segment in self.segments:
             self.length += segment.length
+        self.d_cumulative = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
+        self.d_cumulative_padded = np.hstack((0.0, self.d_cumulative))
 
     def print(self):
         if len(self.segments) == 0:
@@ -215,19 +230,19 @@ class Path():
         assert(a <= 1.0)
         assert(a >= 0.0)
         d = a * self.length  # the distance along the total path
-        d_cumulative = np.cumsum([segment.length for segment in self.segments]) # cumulative distance traveled
-        d_cumulative_padded = np.hstack((0.0, d_cumulative))
-        for i, (segment, d_c, d_cp) in enumerate(zip(self.segments, d_cumulative, d_cumulative_padded)):
-            if d <= d_c:
-                b = (d-d_cp) / segment.length
-                return segment.interpolate_single(b)
-        return None
+        i = np.searchsorted(self.d_cumulative, d, side='left')
+        segment = self.segments[i]
+        b = (d-self.d_cumulative_padded[i]) / segment.length
+        return segment.interpolate_single(b)
 
     def interpolate_multi(self, aa):
-        points = []
-        for a in aa:
-            points.append(self.interpolate_single(a)[0:2])
-        return np.array(points)
+        dd = aa * self.length
+        ii = np.searchsorted(self.d_cumulative, dd, side='left')
+        iis = np.unique(ii)
+        ss = [self.segments[i] for i in ii]
+        ll = np.array([segment.length for segment in self.segments])
+        bb = (dd - self.d_cumulative_padded[ii]) / ll[ii]
+        return np.array([x for i in iis for x in self.segments[i].interpolate_multi(bb[ii == i])])
 
     def interpolate(self, n=100, d=None):
         if d is not None:
