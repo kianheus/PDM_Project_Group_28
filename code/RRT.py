@@ -181,7 +181,7 @@ class Tree():
     '''
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
-    def grow_single(self, end_pose, informed = False, set_angle=None):
+    def grow_single(self, end_pose=None, informed = False, set_angle=None):
         if informed:
             valid_node = False
             while valid_node == False:
@@ -228,8 +228,8 @@ class Tree():
                     if neighbouring_node_ids.shape[0] > 0:  
                         self.rewire(neighbouring_node_ids)
                     
-                done, path = self.connect_to_newest_node(end_pose)
-                
+                done_single, path = self.connect_to_newest_node(end_pose)
+                done |= done_single
                 if finish and done:
                     print("Found a path.")
                     break
@@ -373,7 +373,7 @@ class Tree():
             neighbouring_pose = self.node_poses[idx] # read the pose
             neighbouring_distance_origin = self.node_distances[idx] # read the previously recorded distance of the neighbour to the origin
             
-            path = steer.optimal_path(added_pose, neighbouring_pose, self.turning_radius)
+            path = steer.optimal_path(neighbouring_pose, added_pose, self.turning_radius)
             
             new_neighbouring_distance_origin = added_node.distance_from_origin + path.length
             
@@ -397,7 +397,7 @@ class Tree():
                 self.nodes[idx].distance_from_origin = new_neighbouring_distance_origin
                 self.nodes[idx].distance_from_parent = path.length
                 self.node_distances[idx] = self.nodes[idx].distance_from_origin
-                
+
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
 
