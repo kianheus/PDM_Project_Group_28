@@ -40,7 +40,7 @@ longitudal_pid = PIDcontroller(1, 0, 0.1)
 # initialise environment
 env = carenv.Car() #load in Car environment
 
-state, obstacles = env.reset() #start with reset
+state, obstacles, moving_obstacles = env.reset(1,1, 1.5*np.pi) #start with reset
 
 starttime = time.time()
 
@@ -83,10 +83,10 @@ while True:
     action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
     state, obstacles, moving_obstacles = env.step(action) #set step in environment
     env.render(mode = True) # turn rendering on or off
-    print(moving_obstacles)
+    #print(moving_obstacles)
     ########################## reset every 20 seconds, this can be changed ##########################   
-    if env.get_time() > 30:
-        env.reset()
+    if env.get_time() > 2:
+        env.reset(1,1, 0.5*np.pi)
             
     
     time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop

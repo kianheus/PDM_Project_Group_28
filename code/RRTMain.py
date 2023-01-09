@@ -36,6 +36,8 @@ class consts():
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
+#Define start pose
+start_pose = RRT.pose_deg(-1.5, 5, 180)
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -44,7 +46,7 @@ class consts():
 def main():
     # Create environment and extract relevant information
     env = carenv.Car(render=True)
-    initial_pose, obstacles, moving_obstacles = env.reset() # start with reset
+    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
     # [x, y, rotation, length, width]
 
 
@@ -56,13 +58,12 @@ def main():
 
     #test_approximator(obstacles)
 
-
 # Kian, Thomas
 def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
 
     # Set up a environment map object (used for collisions and random point generation)
     env_map = RRT.Map(obstacles, consts=consts)
-
+    
     # Define end poses
     final_pose = RRT.pose_deg(5, 5, 180)
 
@@ -121,7 +122,7 @@ def test_rrt_blind(obstacles):
     # Grow the tree
     tree.grow_blind(trange(10000), 1*60)
     
-    tree.add_path_to(final_pose)
+    tree.add_path_to(final_pose, modify_angle=False)
     print(tree.get_node(final_pose))
   
     path = tree.path_to(final_pose)
@@ -244,7 +245,7 @@ def mujoco_sim(env, points):
     lateral_pid = PIDcontroller(1, 0, 0)
     longitudal_pid = PIDcontroller(15, 0, 3)
 
-    state, obstacles, moving_obstacles = env.reset() #start with reset
+    state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) #start with reset
 
     original_points = points.copy()
 
@@ -296,6 +297,7 @@ def mujoco_sim(env, points):
         states = np.vstack((states, state))
 
         ########################## reset after 10 seconds, this can be changed ##########################
+
         if env.get_time() > 20:
             env.close_window()
             break
@@ -332,7 +334,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
     
     # only check if path collides with moving obstacles, because normal path is already collision free
     #env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), 0.1, workspace_center, workspace_size) # checks whole space, noy only workspace
-    env_map = RRT.Map(moving_obstacles, workspace_center, workspace_size, vehicle_radius=consts.vehicle_radius)
+    env_map = RRT.Map(moving_obstacles, workspace_center=workspace_center, workspace_size=workspace_size, vehicle_radius=consts.vehicle_radius)
     
     # only check all future points for collisions
     prev_points = points.copy()
@@ -372,10 +374,10 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             
             # use smaller map to speed up RRT
             workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
-            workspace_size = np.array([start[0]+goal[0]+0.1, 1.6]) # Dimensions of workspace CHECK FOR VERTICAL OBSTACLES
-        
+            workspace_size = np.array([max(start[0]+goal[0]+0.1, 1.6), max(start[1]+goal[1], 1.6)]) # Dimensions of workspace
+
             # now use all obstacles
-            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), workspace_center, workspace_size, vehicle_radius=consts.vehicle_radius) # checks whole space, noy only workspace
+            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), workspace_center=workspace_center, workspace_size=workspace_size, vehicle_radius=consts.vehicle_radius) # checks whole space, noy only workspace
         
             # Initialise a RR tree
             tree = RRT.Tree(env_map, initial_pose=start, consts=consts)

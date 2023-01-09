@@ -181,8 +181,6 @@ class Tree():
         added_node = True
         done = False
         neighbouring_node_ids = np.array([])
-        shortest_length = 1000000 
-        best_path = []
         for i in iter:
             if time.time()>close_time:
                 print("Time limit met, stopping.")
@@ -194,15 +192,12 @@ class Tree():
                     
                 done, path = self.connect_to_newest_node(end_pose)
                 
-                if path.length < shortest_length:
-                    shortest_length = path.length
-                    best_path = path
                 if finish and done:
                     print("Found a path.")
                     break
             added_node, neighbouring_node_ids = self.grow_single()
         
-        return True, best_path
+        return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
         close_time=time.time() + max_seconds
