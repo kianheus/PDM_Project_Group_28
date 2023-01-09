@@ -33,6 +33,8 @@ class consts():
     collision_resolution = 0.05
     point_resolution = 0.05
     vehicle_radius = 0.2
+    offset_m = 1.0  # offset in metres
+    offset = offset_m // point_resolution # amount of points offsetted from moving obstacle   
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
@@ -327,7 +329,7 @@ def mujoco_sim(env, points):
 
 def local_planner(state, obstacles, moving_obstacles, points, i):
     reroute = False # used for resetting the index i
-    offset = 20 # amount of points offsetted from moving obstacle   
+    offset = consts.offset # amount of points offsetted from moving obstacle   
 
     # needed to create map
     workspace_center = np.array([state[0], state[1]]) # Coordinate center of workspace
@@ -349,7 +351,7 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
         print("Possible collision")
         # remove the points that collide, add offset, to see new future goal point
         #print(index)
-        index = np.arange(np.min(index)-offset, np.max(index)+offset, 1)
+        index = np.arange(np.min(index), np.max(index)+offset, 1, dtype=int)
         first_coliding_point = points[np.min(index)]
         #print(index)
         mask = np.ones(points.shape[0], bool)
