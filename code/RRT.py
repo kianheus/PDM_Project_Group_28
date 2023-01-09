@@ -166,8 +166,26 @@ class Tree():
     '''
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
-    def grow_single(self):
-        return self.add_path_to(self.map.random_pose())
+    def grow_single(self, end_pose, informed = True):
+        if informed:
+            valid_node = False
+            while valid_node == False:
+                best_distance = np.partition(self.node_distances, 1)[1]
+                #best_distance = np.min(self.node_distances)
+                print("Hello", best_distance)
+                sample_new_pose = self.map.random_pose()
+                distance_from_origin = steer.optimal_path(self.base_node.pose, sample_new_pose, self.turning_radius).length
+                distance_to_end = steer.optimal_path(sample_new_pose, end_pose, self.turning_radius).length
+                
+                if distance_from_origin + distance_to_end < best_distance:
+                    return self.add_path_to(sample_new_pose)
+                    valid_node = True
+                else:
+                   sample_new_pose = self.map.random_pose() 
+                   valid_node = False
+                
+        else:
+            return self.add_path_to(self.map.random_pose())
 
 
     '''
@@ -176,7 +194,7 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = False, informed = False):
         close_time=time.time() + max_seconds
         added_node = True
         done = False
@@ -195,7 +213,7 @@ class Tree():
                 if finish and done:
                     print("Found a path.")
                     break
-            added_node, neighbouring_node_ids = self.grow_single()
+            added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=True)
         
         return done
 
@@ -210,12 +228,6 @@ class Tree():
             if added_node:
                 if neighbouring_node_ids.shape[0] > 0:  
                     self.rewire(neighbouring_node_ids)
-                    
-                #☻done, path = self.connect_to_newest_node(end_pose)
-                
-                #if path.length < shortest_length:
-                    #shortest_length = path.length
-                    #best_path = path
                     
             added_node, neighbouring_node_ids = self.grow_single()
         return
