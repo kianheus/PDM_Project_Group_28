@@ -76,7 +76,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(2000), 1*60, finish=False, star=True) #2819
+    done = tree.grow_to(final_pose, trange(10000), 3*60, finish=False, star=True) #2819
     print(f"{done=}")
 
     tree.print()

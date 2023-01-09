@@ -330,7 +330,7 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=10, i_break=3) -> bool:
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=25, i_break=5) -> bool:
         valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:n_closest] # Select 10 closest nodes
 
 
