@@ -55,11 +55,10 @@ def main():
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
 
     points, ax = test_rrt(obstacles, initial_pose)
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     mujoco_sim(env, points)
 
-
-    # test_rrt_blind(obstacles)
+    #test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
@@ -76,8 +75,8 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
     
     # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(1000), 180)
-    #tree.rewire(final_pose))
+    tree.grow_to(final_pose, trange(100), 1*60) 
+    done, _ = tree.add_path_to(final_pose, modify_angle=False)
 
     if plot:
         fig, ax = plt.subplots()
@@ -123,7 +122,7 @@ def test_rrt_blind(obstacles):
     tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
     
     # Grow the tree
-    tree.grow_blind(trange(10000), 1*20)
+    tree.grow_blind(trange(10000), 1*60)
     
     done, _ = tree.add_path_to(final_pose, modify_angle=False)
     print(f"{done=}")
@@ -180,8 +179,6 @@ def test_approximator(obstacles):
 
 
 
-
-# Paula
 def test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles):
     pygame.init()
     workspace = RRTPlot(start_coord,

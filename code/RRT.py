@@ -166,13 +166,31 @@ class Tree():
     '''
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
-    def grow_single(self, set_angle=None):
-        if set_angle is None:
-            return self.add_path_to(self.map.random_pose())
+    def grow_single(self, end_pose, informed = False, set_angle=None):
+        if informed:
+            valid_node = False
+            while valid_node == False:
+                best_distance = np.partition(self.node_distances, 1)[1]
+                #best_distance = np.min(self.node_distances)
+                print("Hello", best_distance)
+                sample_new_pose = self.map.random_pose()
+                distance_from_origin = steer.optimal_path(self.base_node.pose, sample_new_pose, self.turning_radius).length
+                distance_to_end = steer.optimal_path(sample_new_pose, end_pose, self.turning_radius).length
+                
+                if distance_from_origin + distance_to_end < best_distance:
+                    return self.add_path_to(sample_new_pose)
+                    valid_node = True
+                else:
+                   sample_new_pose = self.map.random_pose() 
+                   valid_node = False
+                
         else:
-            new_pose = self.map.random_pose()
-            new_pose[2] = set_angle
-            return self.add_path_to(new_pose, modify_angle=False)
+            if set_angle is None:
+                return self.add_path_to(self.map.random_pose())
+            else:
+                new_pose = self.map.random_pose()
+                new_pose[2] = set_angle
+                return self.add_path_to(new_pose, modify_angle=False)
 
 
     '''
@@ -200,8 +218,7 @@ class Tree():
                 if finish and done:
                     print("Found a path.")
                     break
-            added_node, neighbouring_node_ids = self.grow_single(set_angle=set_angle)
-        
+            added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=informed, set_angle=set_angle)
         return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
@@ -215,12 +232,6 @@ class Tree():
             if added_node:
                 if neighbouring_node_ids.shape[0] > 0:  
                     self.rewire(neighbouring_node_ids)
-                    
-                #☻done, path = self.connect_to_newest_node(end_pose)
-                
-                #if path.length < shortest_length:
-                    #shortest_length = path.length
-                    #best_path = path
                     
             added_node, neighbouring_node_ids = self.grow_single()
         return
@@ -370,6 +381,7 @@ class Tree():
                 self.nodes[idx].parent_edge.path = path
                 self.nodes[idx].distance_from_origin = new_neighbouring_distance_origin
                 self.nodes[idx].distance_from_parent = path.length
+                self.node_distances[idx] = self.nodes[idx].distance_from_origin
                 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
@@ -380,7 +392,6 @@ class Tree():
         child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
         child.children_nodes
         for grandchild in child.children_nodes:
-            #print("Hello")
             self.distance_update(child, grandchild) 
 
 
