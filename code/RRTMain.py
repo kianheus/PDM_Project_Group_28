@@ -51,10 +51,10 @@ def main():
 
 
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-    points, ax = test_rrt(obstacles, initial_pose)
-    mujoco_sim(env, points)
+    # points, ax = test_rrt(obstacles, initial_pose)
+    # mujoco_sim(env, points)
 
-    # test_rrt_blind(obstacles)
+    test_rrt_blind(obstacles)
 
     #test_approximator(obstacles)
 
@@ -111,25 +111,24 @@ def test_rrt_blind(obstacles):
     # Set up a environment map object (used for collisions and random point generation)
     env_map = RRT.Map(obstacles, consts=consts)
 
-    # Define start and end poses
-    initial_pose = RRT.pose_deg(0.0, 0.0, 0)
-
-    final_pose = RRT.pose_deg(1.5, 5.0, 180)
+    # Define end pose
+    final_pose = RRT.pose_deg(3.5, 5.0, 180)
 
     # Initialise a RR tree
-    tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
+    tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
     
     # Grow the tree
-    tree.grow_blind(trange(10000), 1*60)
+    tree.grow_blind(trange(10000), 1*20)
     
-    tree.add_path_to(final_pose, modify_angle=False)
-    print(tree.get_node(final_pose))
-  
-    path = tree.path_to(final_pose)
+    done, _ = tree.add_path_to(final_pose, modify_angle=False)
+    print(f"{done=}")
+    if done:
+        print(tree.get_node(final_pose))
+        path = tree.path_to(final_pose)
     
     tree.print()
     
-    """
+    
     fig, ax = plt.subplots()
     env_map.plot(ax)    # plot the environment (obstacles)
 
@@ -138,20 +137,21 @@ def test_rrt_blind(obstacles):
         edge.path.plot(ax, endpoint=True, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
     # plot the start and endpoints
-    steer.plot_point(ax, initial_pose[:2], initial_pose[2], color="green")
-    steer.plot_point(ax, final_pose[:2], final_pose[2], color="red")
+    RRT.plot_pose(ax, start_pose, color="green")
+    RRT.plot_pose(ax, final_pose, color="red")
 
     ax.set_xlim(-4, 4)
     ax.set_ylim(-4, 4)
     plt.axis("equal")
     
-    path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-    path.print()
-    points = path.interpolate_poses(d=0.05)
-    plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
+    if done:
+        path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+        path.print()
+        points = path.interpolate_poses(d=0.05)
+        plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
 
     plt.show()
-    """
+    
 
 
 def test_approximator(obstacles):
