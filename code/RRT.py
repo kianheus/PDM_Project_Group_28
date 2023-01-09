@@ -227,13 +227,15 @@ class Tree():
                 if star:
                     if neighbouring_node_ids.shape[0] > 0:  
                         self.rewire(neighbouring_node_ids)
-                    
-                done_single, path = self.connect_to_newest_node(end_pose)
-                done |= done_single
+                if finish:
+                    done_single, path = self.connect_to_newest_node(end_pose)
+                    done |= done_single
                 if finish and done:
                     print("Found a path.")
                     break
             added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=informed, set_angle=set_angle)
+        if not finish:
+            done, _ = self.add_path_to(end_pose, modify_angle=False)
         return done
 
     def grow_blind(self, iter = range(100), max_seconds = 180):
@@ -288,9 +290,9 @@ class Tree():
         distances = np.linalg.norm(offset, axis=1)
         idx_closest = np.argmin(distances)
         if distances[idx_closest] > 2e-3:
-            print(f"No matching node found. Closest node at {distances[idx_closest]}.")
-            print(f"{distances=}")
-            print(f"{offset=}")
+            # print(f"No matching node found. Closest node at {distances[idx_closest]}.")
+            # print(f"{distances=}")
+            # print(f"{offset=}")
             return None
         return self.nodes[idx_closest]
 
@@ -299,18 +301,30 @@ class Tree():
     Tries to connect a new_pose to the newest node in the tree
     '''
     def connect_to_newest_node(self, new_pose : np.ndarray):
+        node = self.get_node(new_pose)
         path = steer.optimal_path(self.node_poses[-1], new_pose, self.turning_radius)
-        discrete_path = path.interpolate(d=self.collision_resolution)
-        collision = self.map.collision_check(discrete_path)
-        if collision:
-            return False, path
-        # add path to tree
-        if len(self.edges) > 0:
-            self.add_node(self.edges[-1].end_node, path)
-        else:
-            self.add_node(self.base_node, path)
-        return True, path
+        new_path_is_shorter = False
 
+        # if node is not None:
+        #     new_path_is_shorter = (node.distance_from_origin > self.nodes[-1].distance_from_origin + path.length)
+        #     if new_path_is_shorter:
+                # print("new path is shorter")
+        #         discrete_path = path.interpolate(d=self.collision_resolution)
+        #         collision = self.map.collision_check(discrete_path)
+        #         if not collision:
+        #             # modify path leading up to newest node
+
+
+        if node is None:
+            discrete_path = path.interpolate(d=self.collision_resolution)
+            collision = self.map.collision_check(discrete_path)
+            if collision:
+                return False, None
+            # add path to tree
+            self.add_node(self.nodes[-1], path)
+            return True, path
+
+        return True, node.parent_edge.path
 
     '''
     This function finds a path from a node on the tree to the new node.
@@ -400,6 +414,8 @@ class Tree():
 
                 for child in self.nodes[idx].children_nodes:
                     self.distance_update(self.nodes[idx], child)
+
+                self.node_distances = np.array([node.distance_from_origin for node in self.nodes])
 
 
 

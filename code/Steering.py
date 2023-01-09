@@ -217,7 +217,7 @@ class Path():
         else:
             print(f"start position = {self.segments[0].point_start}")
             for segment in self.segments:
-                print(f"{segment.point_start=}, {segment.point_end=}")
+                # print(f"{segment.point_start=}, {segment.point_end=}")
                 print(f"distance     = {segment.length:.04}, curve = {segment.curvature:.04}")
             print(f"end position = {self.segments[-1].point_end}")
             print(f"Total = {self.length}")
