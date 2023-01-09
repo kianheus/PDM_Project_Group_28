@@ -135,7 +135,8 @@ class Car(core.Env):
     # moving obstacles. x,y postion, orientation around z-axis, "x,y" size
     def get_moving_obstacle(self): 
         obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
-        obs[:,3:] = obs[:,3:]*2      
+        obs[:,3:] = obs[:,3:]*2.25   
+        #obs[:,0] = obs[:,0] -0.5  
         return obs
     
     # moving obstacle velocity, in x, y, z direction

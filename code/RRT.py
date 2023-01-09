@@ -125,7 +125,7 @@ The tree has a list of node poses (not node objects), which can be used to rapid
 The tree also contains a collision map and parameters of the search
 '''
 class Tree():
-    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None):
+    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None, local_planner = False):
         if consts is not None:
             if turning_radius is None:
                 turning_radius = consts.turning_radius
@@ -141,6 +141,21 @@ class Tree():
         self.collision_resolution = collision_resolution
         self.dummy_counter = 0
         self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
+        
+        if local_planner == True:
+            
+            #moving_obstacle = self.map.obstacles[-1,:]
+            
+            pose_angle = self.base_node.pose[-1]
+            pose_x = self.map.workspace_center[0]
+            pose_y = self.map.workspace_center[1] + 1.5
+            new_pose1 = np.hstack((pose_x, pose_y, pose_angle))
+            self.add_path_to(new_pose1, modify_angle=False)
+            
+            pose2_y = self.map.workspace_center[1] - 1.5
+            new_pose2 = np.hstack((pose_x, pose2_y, pose_angle))
+            self.add_path_to(new_pose2, modify_angle=False)
+            
 
 
     def print(self):
@@ -183,7 +198,7 @@ class Tree():
                 else:
                    sample_new_pose = self.map.random_pose() 
                    valid_node = False
-                
+    
         else:
             if set_angle is None:
                 return self.add_path_to(self.map.random_pose())
@@ -199,7 +214,7 @@ class Tree():
     Iteration is cut off after some amount of seconds to prevent runnaway.
     The function returns true if a path has been found.
     '''
-    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False, set_angle=None):
+    def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False, set_angle=None, local_planner=False):
         close_time=time.time() + max_seconds
         added_node = True
         done = False

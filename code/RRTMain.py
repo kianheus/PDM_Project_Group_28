@@ -25,14 +25,14 @@ import Approximator
 
 
 
-np.random.seed(69)
+np.random.seed(428)
 
 
 class consts():
     turning_radius = 0.8
     collision_resolution = 0.05
     point_resolution = 0.05
-    vehicle_radius = 0.2
+    vehicle_radius = 0.3
     offset_m = 1.0  # offset in metres
     offset = offset_m // point_resolution # amount of points offsetted from moving obstacle
     collision_offset_m = 3.0
@@ -40,7 +40,7 @@ class consts():
     workspace_size = np.array([30, 30])
 
 #Define start pose
-start_pose = RRT.pose_deg(-1.5, 5, 180)
+start_pose = RRT.pose_deg(-1.5, 0, 0)
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -55,7 +55,7 @@ def main():
     #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
 
     points, ax = test_rrt(obstacles, initial_pose)
-    env = carenv.Car(render=False)
+    env = carenv.Car(render=True)
     mujoco_sim(env, points)
 
     #test_rrt_blind(obstacles)
@@ -69,7 +69,7 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
     env_map = RRT.Map(obstacles, consts=consts)
     
     # Define end poses
-    final_pose = RRT.pose_deg(5, 5, 180)
+    final_pose = RRT.pose_deg(9, 0.1, 0)
 
     # Initialise a RR tree
     tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
@@ -305,7 +305,7 @@ def mujoco_sim(env, points):
             break
 
         
-        if n % 4 == 0:
+        if n % 2 == 0:
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
             
@@ -382,14 +382,14 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), workspace_center=workspace_center, workspace_size=workspace_size, vehicle_radius=consts.vehicle_radius) # checks whole space, noy only workspace
         
             # Initialise a RR tree
-            tree = RRT.Tree(env_map, initial_pose=start, consts=consts)
+            tree = RRT.Tree(env_map, initial_pose=start, consts=consts, local_planner = True)
 
-            new_angle = np.arctan2(np.cos(start[2]) + np.cos(goal[2]), np.sin(start[2]) + np.sin(goal[2]))
+            #new_angle = np.arctan2(np.cos(start[2]) + np.cos(goal[2]), np.sin(start[2]) + np.sin(goal[2]))
 
-            print(f"{new_angle=}")
+            #print(f"{new_angle=}")
         
             # Grow the tree to the final pose
-            done = tree.grow_to(goal, trange(200), 0.25, star=False, set_angle=new_angle)
+            done = tree.grow_to(goal, trange(200), 0.25, star=False)
             
             # fig, ax = plt.subplots()
             # env_map.plot(ax)    # plot the environment (obstacles)   
