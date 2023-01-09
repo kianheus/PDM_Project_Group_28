@@ -400,6 +400,8 @@ class Tree():
                 collision = self.map.collision_check(discrete_path)
                 if collision:
                     continue
+
+                # print(f"Rewiring node #{len(self.nodes)-1}")
                 
                 # Update the parameters of the neighbour we are rewiring to
                 self.nodes[idx].parent_node.children_nodes.remove(self.nodes[idx]) # remove old parent
