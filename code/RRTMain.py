@@ -180,7 +180,8 @@ def mujoco_sim(env, start_pose, tree):
         env.render(mode = True) # turn rendering on or off
         states = np.vstack((states, state))
 
-        ########################## reset after 10 seconds, this can be changed ##########################
+        
+        ########################## resets when reaching endgoal ##########################
 
         if np.linalg.norm(state[:2] - points[-1, :2]) < 0.5 and np.linalg.norm(env.get_car_velocity()) < 0.1:
             env.close_window()

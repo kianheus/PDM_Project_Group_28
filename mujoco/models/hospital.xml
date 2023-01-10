@@ -121,14 +121,20 @@
     	<geom name="hospitalbed12" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.1" mass="100" rgba = '1 1 1 1'/>
     </body> 
 
-    <body name="movingbed1" pos="5.5 0 0.0" euler="0 0 0.000000">
+    <body name="movingbed1" pos="5.5 1.25 0.0" euler="0 0 0.000000">
     	<geom name="movingbed1" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.12" mass="100" rgba = '1 1 1 1'/>
-	<joint axis="1 0 0" limited="true" name="slider" pos="0 0 0" range="-14.5 3.5" type="slide"/>
+	<joint axis="1 0 0" limited="true" name="slider1" pos="0 0 0" range="-14.5 3.5" type="slide"/>
     </body> 
+
+    <body name="movingbed2" pos="-2 -1.25 0.0" euler="0 0 0.000000">
+    	<geom name="movingbed2" type="mesh" mesh="hospitalbed" pos="2.5 4.5 0.12" mass="100" rgba = '1 1 1 1'/>
+	<joint axis="1 0 0" limited="true" name="slider2" pos="0 0 0" range="-14.5 3.5" type="slide"/>
+    </body> 	
 
   </worldbody>
 
   <actuator>
-      <velocity kv = "50" joint="slider" name="slide"/>
+      <velocity kv = "50" joint="slider1" name="slide1"/>
+      <velocity kv = "50" joint="slider2" name="slide2"/>
   </actuator>
 </mujoco>
