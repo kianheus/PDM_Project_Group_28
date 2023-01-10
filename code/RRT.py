@@ -496,6 +496,7 @@ class Tree():
                 reroute = True # used to reset index
             else:
                 print(f"Could not find path, even though there should be one!!!")
+                reroute = False
             return points, reroute
         return None, False
     
