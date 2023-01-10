@@ -358,7 +358,7 @@ class Tree():
                 angle = (angle_displacement + angle_random) % (np.pi * 2)
                 new_pose[2] = angle
             # potential_steering_paths.append(steer.optimal_path(self.node_poses[idx], new_pose, self.turning_radius))
-            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Interpolated))
+            path_dist_approx.append(self.DA.lookup(self.node_poses[idx], new_pose, Approximator.InterpolationType.Nearest))
 
         shortest_path_ids = np.argsort([dist + self.node_distances[valid_indices][i] for i, dist in enumerate(path_dist_approx)])
         # shortest_path_ids = np.argsort([path.length + self.node_distances[valid_indices][i] for i, path in enumerate(potential_steering_paths)])
@@ -499,9 +499,9 @@ class Tree():
             return points, reroute
         return None, False
     
-    def grow_reverse_tree(obstacles, consts, final_pose, itera=trange(10000), max_seconds=5*60):
+    def grow_reverse_tree(obstacles, consts, final_pose, itera=trange(10000), max_seconds=3*60):
         # Set up a environment map object (used for collisions and random point generation)
-        env_map = RRT.Map(obstacles, consts=consts)
+        env_map = Map(obstacles, consts=consts)
 
         final_pose_rev = steer.reverse_pose(final_pose.copy())
 
@@ -512,6 +512,21 @@ class Tree():
         tree.grow_to(steer.pose_deg(0, 0, 0), itera, max_seconds, finish=False, star=True)
 
         return tree
+    
+    def plot(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.map.plot(ax)    # plot the environment (obstacles)
+
+        # plot the edges of the tree
+        for edge in self.edges:
+            edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
+            
+        plot_pose(ax, self.nodes[0].pose, color="blue")
+        
+        ax.axis("equal")
+            
+        return ax
 
 def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3

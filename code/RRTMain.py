@@ -46,23 +46,31 @@ class consts():
 
 def main():
     # Deifne the start and end points
-    start_pose = RRT.pose_deg(-3.5, 0, 180)
-    final_pose=RRT.pose_deg(3.5, 5.0, 180)
+    start_pose = RRT.pose_deg(-3.5, -7.0, 180)
+    final_pose = RRT.pose_deg(3.5, 5.0, 180)
     
     # Create environment and extract relevant information
     env = carenv.Car(render=True)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False)
+    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
+    
+    tree.print()
+    # ax = tree.plot()
+    # RRT.plot_pose(ax, start_pose, color="green")
+    # RRT.plot_pose(ax, final_pose, color="red")
+    # plt.pause(0.1)
     
     # Run the simulation
     mujoco_sim(env, start_pose, tree)
+    
+    plt.show()
 
 
-def test_rrt_reverse(obstacles, grow=False, final_pose=RRT.pose_deg(3.5, -5.0, 180)):
+def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose)
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
         with open("tree.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
