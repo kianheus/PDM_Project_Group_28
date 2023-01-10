@@ -130,13 +130,17 @@ The tree has a list of node poses (not node objects), which can be used to rapid
 The tree also contains a collision map and parameters of the search
 '''
 class Tree():
-    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None, local_planner = False):
+    def __init__(self, map : Map, initial_pose : np.ndarray, turning_radius : float = None, collision_resolution : float = None, consts = None, local_planner = False, lookahead : int = None, point_resolution : float = None):
         if consts is not None:
             if turning_radius is None:
                 turning_radius = consts.turning_radius
             if collision_resolution is None:
                 collision_resolution = consts.collision_resolution
-        self.map = map
+            if point_resolution is None:
+                point_resolution = consts.point_resolution
+            if lookahead is None:
+                lookahead = consts.lookahead
+        self.map : Map = map
         self.base_node = Node(initial_pose)
         self.edges : list[Edge] = []
         self.nodes : list[Node] = [self.base_node]
@@ -144,6 +148,8 @@ class Tree():
         self.node_distances = np.array([0])
         self.turning_radius = turning_radius
         self.collision_resolution = collision_resolution
+        self.point_resolution = point_resolution
+        self.lookahead = lookahead
         self.dummy_counter = 0
         self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
         
@@ -338,7 +344,7 @@ class Tree():
     If this path is in collision, it is not added to the tree.
     Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
     '''
-    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=25, i_break=5) -> bool:
+    def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=50, i_break=10) -> bool:
         valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:n_closest] # Select 10 closest nodes
 
 
@@ -432,7 +438,63 @@ class Tree():
         child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
         child.children_nodes
         for grandchild in child.children_nodes:
-            self.distance_update(child, grandchild) 
+            self.distance_update(child, grandchild)
+
+    def local_planner(self, state, obstacles, moving_obstacles, points, i : int):
+        reroute = False # used for resetting the index i 
+
+        env_map = Map(moving_obstacles, vehicle_radius=self.map.vehicle_radius, workspace_center=self.map.workspace_center, workspace_size=self.map.workspace_size)
+        
+        # only check all future points for collisions
+        # prev_points = points.copy()
+        points = points[i:i+self.lookahead]
+        collision = env_map.collision_check(points)
+        
+        # if there are collisions, do local planning
+        if collision:
+            print("collision within range")
+
+            state_rev = steer.reverse_pose(state.copy())
+            
+            self.map.set_obstacles(np.vstack((obstacles,moving_obstacles)))
+
+            # Grow the tree to the final pose
+            done, _ = self.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
+            # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
+            
+            # fig, ax = plt.subplots()
+            # env_map.plot(ax)    # plot the environment (obstacles)   
+            # ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+            # ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+            # ax.scatter(goal[0], goal[1])
+            
+            if done:
+                print("---> Found new path!")
+                path = self.path_to(state_rev)
+                #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+                #path.print()
+                if path is not None:
+                    updated_points = path.interpolate_poses(d=self.point_resolution, reverse=True) # new path to goal
+                    points = updated_points # combine new and old path
+                    reroute = True # used to reset index
+                else:
+                    print(f"Could not find path, even though there should be one!!!")
+            else:
+                print("---> No path found!")
+
+                # ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
+
+            
+            
+            # ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='winter')
+            # ax.scatter(coliding_points[:,0], coliding_points[:,1], c=range(coliding_points.shape[0]), cmap='autumn')
+            # RRT.plot_pose(ax, start, color='green')
+            # RRT.plot_pose(ax, goal, color='blue')
+            # RRT.plot_pose(ax, first_coliding_point, color='red')
+            # ax.axis("equal")
+            # plt.show()
+        
+        return points, reroute
 
 def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3

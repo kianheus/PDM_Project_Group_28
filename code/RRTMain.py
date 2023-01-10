@@ -151,7 +151,7 @@ def grow_reverse_tree(obstacles, final_pose=RRT.pose_deg(3.5, -5.0, 180)):
     tree = RRT.Tree(env_map, initial_pose=final_pose_rev, consts=consts)
     
     # Grow the tree
-    done = tree.grow_to(start_pose_rev, trange(10000), 3*60, finish=False, star=True)
+    done = tree.grow_to(start_pose_rev, trange(10000), 5*60, finish=False, star=True)
     print(f"{done=}")
     if done:
         print(tree.get_node(start_pose_rev))
@@ -397,7 +397,7 @@ def mujoco_sim(env, points, tree):
             i = bound(0, points.shape[0]-1, i)
             
         if n % 10 == 0:
-            points2, reroute = local_planner(state, obstacles, moving_obstacles, points, i, tree)
+            points2, reroute = tree.local_planner(state, obstacles, moving_obstacles, points, i)
             if reroute == True:
                 points = points2
                 i = 0
@@ -412,61 +412,7 @@ def mujoco_sim(env, points, tree):
     ax.axis("equal")
     plt.show()
 
-def local_planner(state, obstacles, moving_obstacles, points, i : int, tree : RRT.Tree):
-    reroute = False # used for resetting the index i 
-
-    env_map = RRT.Map(moving_obstacles, consts=consts)
-    
-    # only check all future points for collisions
-    # prev_points = points.copy()
-    points = points[i:i+consts.lookahead]
-    collision = env_map.collision_check(points)
-    
-    # if there are collisions, do local planning
-    if collision:
-        print("collision within range")
-
-        state_rev = steer.reverse_pose(state.copy())
-        
-        tree.map.set_obstacles(np.vstack((obstacles,moving_obstacles)))
-
-        # Grow the tree to the final pose
-        done, _ = tree.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
-        # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
-        
-        # fig, ax = plt.subplots()
-        # env_map.plot(ax)    # plot the environment (obstacles)   
-        # ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
-        # ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
-        # ax.scatter(goal[0], goal[1])
-        
-        if done:
-            print("---> Found new path!")
-            path = tree.path_to(state_rev)
-            #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-            #path.print()
-            if path is not None:
-                updated_points = path.interpolate_poses(d=consts.point_resolution, reverse=True) # new path to goal
-                points = updated_points # combine new and old path
-                reroute = True # used to reset index
-            else:
-                print(f"Could not find path, even though there should be one!!!")
-        else:
-            print("---> No path found!")
-
-            # ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
-
-        
-        
-        # ax.scatter(future_points[:,0], future_points[:,1], c=range(future_points.shape[0]), cmap='winter')
-        # ax.scatter(coliding_points[:,0], coliding_points[:,1], c=range(coliding_points.shape[0]), cmap='autumn')
-        # RRT.plot_pose(ax, start, color='green')
-        # RRT.plot_pose(ax, goal, color='blue')
-        # RRT.plot_pose(ax, first_coliding_point, color='red')
-        # ax.axis("equal")
-        # plt.show()
-    
-    return points, reroute     
+     
     
 if __name__ == '__main__':
     main()
