@@ -43,7 +43,6 @@ class Car(core.Env):
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
         obstacles = self.get_obstacles()
         moving_obstacles = self.get_moving_obstacle()
-        moving_obstacles_speed = self.get_moving_obstacle_speed()
         
         # reset counter and bedspeed for moving obstacles
         self.counter = 0   
@@ -71,7 +70,6 @@ class Car(core.Env):
         state = np.array([data['car_pos'][0], data['car_pos'][1], data['car_orientation']])
         obstacles = self.get_obstacles()
         moving_obstacles = self.get_moving_obstacle()
-        moving_obstacles_speed = self.get_moving_obstacle_speed()
         
         # counter used for moving bed
         self.counter = self.counter + 1
@@ -139,10 +137,10 @@ class Car(core.Env):
         #obs[:,0] = obs[:,0] -0.5  
         return obs
     
-    # moving obstacle velocity, in x, y, z direction
-    def get_moving_obstacle_speed(self):
-        obs_vel = np.array([self.data.body('movingbed1').cvel[3:6]])
-        return obs_vel
+    # car obstacle velocity, in x, y direction
+    def get_car_velocity(self):
+        vel = np.array([self.data.body('buddy').cvel[3:5]])
+        return vel
     
     # returns simulation time
     def get_time(self):

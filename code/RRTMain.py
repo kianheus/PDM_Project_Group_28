@@ -182,7 +182,7 @@ def mujoco_sim(env, start_pose, tree):
 
         ########################## reset after 10 seconds, this can be changed ##########################
 
-        if env.get_time() > 20:
+        if np.linalg.norm(state[:2] - points[-1, :2]) < 0.5 and np.linalg.norm(env.get_car_velocity()) < 0.1:
             env.close_window()
             break
 
