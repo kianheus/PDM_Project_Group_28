@@ -33,11 +33,11 @@ class consts():
     collision_resolution = 0.05
     point_resolution = 0.05
     vehicle_radius = 0.3
-    lookahead_m = 5.0
+    lookahead_m = 3.0
     lookahead : int = int(lookahead_m // point_resolution)
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
-    recompute_error_treshold = 1.75
+    recompute_error_treshold = 2.0
 
 
 # -----------------------------------------------------------------------------
@@ -46,7 +46,7 @@ class consts():
 
 def main():
     # Deifne the start and end points
-    start_pose = RRT.pose_deg(-3.5, -7.0, 180)
+    start_pose = RRT.pose_deg(0.0, 0.0, 180)
     final_pose = RRT.pose_deg(3.5, 5.0, 180)
     
     # Create environment and extract relevant information
@@ -55,6 +55,8 @@ def main():
 
     # grow/load the tree
     tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
+    
+    tree.lookahead = consts.lookahead
     
     tree.print()
     # ax = tree.plot()
@@ -199,6 +201,7 @@ def mujoco_sim(env, start_pose, tree):
                 i = 0
             
         if total_error > consts.recompute_error_treshold:
+            print(f"error too big ({total_error}, {abs(theta_error)=}, {abs(longitudal_error)=}, {abs(lateral_error)=})")
             points2, reroute = tree.recompute_path(state, obstacles)
             if reroute == True:
                 points = points2
