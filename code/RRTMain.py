@@ -45,7 +45,7 @@ class consts():
 
 def main():
     # Deifne the start and end points
-    start_pose = RRT.pose_deg(3.5, 9.25, 0)
+    start_pose = RRT.pose_deg(-3.5, 9.25, 180)
     final_pose=RRT.pose_deg(3.5, 5.0, 180)
     
     # Create environment and extract relevant information
