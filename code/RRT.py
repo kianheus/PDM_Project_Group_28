@@ -510,6 +510,21 @@ class Tree():
         tree.grow_to(steer.pose_deg(0, 0, 0), itera, max_seconds, finish=False, star=True)
 
         return tree
+    
+    def plot(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.map.plot(ax)    # plot the environment (obstacles)
+
+        # plot the edges of the tree
+        for edge in self.edges:
+            edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
+            
+        plot_pose(ax, self.nodes[0].pose, color="blue")
+        
+        ax.axis("equal")
+            
+        return ax
 
 def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3
