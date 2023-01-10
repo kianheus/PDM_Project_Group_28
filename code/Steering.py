@@ -243,8 +243,13 @@ class Path():
         angles = np.arctan2(diff[:,1], diff[:,0])
         return (mid, angles)
 
-    def interpolate_poses(self, n=100, d=None, fdt=0.0001):
+    def interpolate_poses(self, n=100, d=None, fdt=0.0001, reverse=False):
         mid, angles = self.interpolate_angles(n, d, fdt)
+        if reverse:
+            angles += np.pi
+            angles %= (2*np.pi)
+            mid = np.flipud(mid)
+            angles = np.flipud(angles)
         return np.hstack((mid, np.expand_dims(angles, axis=1)))
 
 class PathTST(Path):
