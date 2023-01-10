@@ -86,8 +86,9 @@ def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
         env_map.plot(ax)    # plot the environment (obstacles)
 
         # plot the edges of the tree
-        for edge in tree.edges:
-            edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
+        if len(tree.edges) < 2000:
+            for edge in tree.edges:
+                edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
 
     # backtrack the tree to generate a path and a list of points
     points = np.array([[0.0, 0.0, 0.0]])

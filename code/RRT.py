@@ -113,7 +113,11 @@ class Map():
 
     def plot(self, ax : plt.Axes):
         for obstacle in self.obstacles:
-            ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2,obstacle[1]-obstacle[4]/2), obstacle[3], obstacle[4]))
+            margin = 0.2
+            ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2-margin,obstacle[1]-obstacle[4]/2-margin), obstacle[3]+2*margin, obstacle[4]+2*margin, facecolor="lightgrey"))
+        for obstacle in self.obstacles:
+            ax.add_patch(patches.Rectangle((obstacle[0]-obstacle[3]/2,obstacle[1]-obstacle[4]/2), obstacle[3], obstacle[4], facecolor="darkred"))
+            
 
 
 '''
