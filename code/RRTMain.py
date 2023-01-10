@@ -37,6 +37,7 @@ class consts():
     lookahead : int = int(lookahead_m // point_resolution)
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
+    recompute_error_treshold = 1.75
 
 
 # -----------------------------------------------------------------------------
@@ -45,7 +46,7 @@ class consts():
 
 def main():
     # Deifne the start and end points
-    start_pose = RRT.pose_deg(-3.5, 9.25, 180)
+    start_pose = RRT.pose_deg(-3.5, 0, 180)
     final_pose=RRT.pose_deg(3.5, 5.0, 180)
     
     # Create environment and extract relevant information
@@ -149,6 +150,8 @@ def mujoco_sim(env, start_pose, tree):
 
         lateral_error = -np.sin(difference_angle)*distance
         longitudal_error = np.cos(difference_angle)*distance
+        
+        total_error = abs(theta_error) + abs(longitudal_error) + abs(lateral_error)
 
         ########################## PID ##########################
         steering_angle_theta = theta_pid.pid(theta_error)
@@ -160,7 +163,7 @@ def mujoco_sim(env, start_pose, tree):
         steering_angle = steering_angle_lateral + steering_angle_theta
 
         #bounds
-        throttle = bound(-5, 5, throttle)
+        throttle = bound(-4, 4, throttle)
         steering_angle = bound(-0.38, 0.38, steering_angle)
 
         ########################## sim ##########################
@@ -182,6 +185,12 @@ def mujoco_sim(env, start_pose, tree):
             
         if n % 10 == 0:
             points2, reroute = tree.local_planner(state, obstacles, moving_obstacles, points, i)
+            if reroute == True:
+                points = points2
+                i = 0
+            
+        if total_error > consts.recompute_error_treshold:
+            points2, reroute = tree.recompute_path(state, obstacles)
             if reroute == True:
                 points = points2
                 i = 0

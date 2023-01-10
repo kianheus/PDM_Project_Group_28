@@ -454,33 +454,7 @@ class Tree():
         if collision:
             print("collision within range")
 
-            state_rev = steer.reverse_pose(state.copy())
-            
-            self.map.set_obstacles(np.vstack((obstacles,moving_obstacles)))
-
-            # Grow the tree to the final pose
-            done, _ = self.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
-            # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
-            
-            # fig, ax = plt.subplots()
-            # env_map.plot(ax)    # plot the environment (obstacles)   
-            # ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
-            # ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
-            # ax.scatter(goal[0], goal[1])
-            
-            if done:
-                print("---> Found new path!")
-                path = self.path_to(state_rev)
-                #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-                #path.print()
-                if path is not None:
-                    updated_points = path.interpolate_poses(d=self.point_resolution, reverse=True) # new path to goal
-                    points = updated_points # combine new and old path
-                    reroute = True # used to reset index
-                else:
-                    print(f"Could not find path, even though there should be one!!!")
-            else:
-                print("---> No path found!")
+            points, reroute = self.recompute_path(state, np.vstack((obstacles,moving_obstacles)))
 
                 # ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
 
@@ -496,6 +470,34 @@ class Tree():
         
         return points, reroute
     
+    def recompute_path(self, state, obstacles):
+        state_rev = steer.reverse_pose(state.copy())
+        
+        self.map.set_obstacles(obstacles)
+
+        # Grow the tree to the final pose
+        done, _ = self.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
+        # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
+        
+        # fig, ax = plt.subplots()
+        # env_map.plot(ax)    # plot the environment (obstacles)   
+        # ax.set_xlim(-workspace_size[0]/2 + workspace_center[0], workspace_size[0]/2 + workspace_center[0])
+        # ax.set_ylim(-workspace_size[1]/2 + workspace_center[1], workspace_size[1]/2 + workspace_center[1])
+        # ax.scatter(goal[0], goal[1])
+        
+        if done:
+            print("---> Found new path!")
+            path = self.path_to(state_rev)
+            #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
+            #path.print()
+            if path is not None:
+                updated_points = path.interpolate_poses(d=self.point_resolution, reverse=True) # new path to goal
+                points = updated_points # combine new and old path
+                reroute = True # used to reset index
+            else:
+                print(f"Could not find path, even though there should be one!!!")
+            return points, reroute
+        return None, False
     
     def grow_reverse_tree(obstacles, consts, final_pose, itera=trange(10000), max_seconds=5*60):
         # Set up a environment map object (used for collisions and random point generation)
