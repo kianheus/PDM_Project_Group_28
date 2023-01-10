@@ -15,6 +15,11 @@ def rot(theta) -> np.ndarray:
 def pose_deg(x, y, t):
     return np.array([x, y, np.deg2rad(t)])
 
+def reverse_pose(pose):
+    pose[2] += np.pi
+    pose[2] %= (2*np.pi)
+    return pose
+
 
 def transform(start_pose, end_pose):
     # start_position = start_pose.copy()
