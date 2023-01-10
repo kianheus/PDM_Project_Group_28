@@ -66,11 +66,13 @@ class Map():
                 workspace_center = consts.workspace_center
             if workspace_size is None:
                 workspace_size = consts.workspace_size
-        self.obstacles = obstacles
+        self.set_obstacles(obstacles)
         self.vehicle_radius = vehicle_radius
         self.workspace_center = workspace_center
         self.workspace_size = workspace_size
 
+    def set_obstacles(self, obstacles):
+        self.obstacles = obstacles
         self.obstacle_1 = np.atleast_2d(self.obstacles[:,0] - self.obstacles[:,3]/2)
         self.obstacle_2 = np.atleast_2d(self.obstacles[:,0] + self.obstacles[:,3]/2)
         self.obstacle_3 = np.atleast_2d(self.obstacles[:,1] - self.obstacles[:,4]/2)

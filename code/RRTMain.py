@@ -25,7 +25,7 @@ import carenv
 import Approximator
 
 
-np.random.seed(428)
+# np.random.seed(428)
 
 
 class consts():
@@ -40,7 +40,7 @@ class consts():
     workspace_size = np.array([30, 30])
 
 #Define start pose
-start_pose = RRT.pose_deg(-3.5, 5, 180)
+start_pose = RRT.pose_deg(-3.5, 9.25, 180)
 
 # -----------------------------------------------------------------------------
 # Define main fucntion
@@ -59,11 +59,31 @@ def main():
     # env = carenv.Car(render=True)
     # mujoco_sim(env, points)
 
-    tree = grow_reverse_tree(obstacles)
-    path = tree.path_to(steer.reverse_pose(start_pose.copy()))
+
+    grow = False
+
+    if grow:
+        tree = grow_reverse_tree(obstacles)
+        with open("tree.pickle", "wb") as outfile:
+            # "wb" argument opens the file in binary mode
+            pickle.dump(tree, outfile)
+    else:
+        print("loading...")
+        with open("tree.pickle", "rb") as infile:
+            tree : RRT.Tree = pickle.load(infile)
+        print("loaded.")
+
+    # tree = grow_reverse_tree(obstacles)
+    start_pose_rev = steer.reverse_pose(start_pose.copy())
+    tree.add_path_to(start_pose_rev, modify_angle=False, n_closest=100, i_break=25)
+    path = tree.path_to(start_pose_rev)
+    if path is None:
+        print("no path found")
+        
+        exit()
     points = path.interpolate_poses(d=consts.point_resolution, reverse=True)
     env = carenv.Car(render=True)
-    mujoco_sim(env, points)
+    mujoco_sim(env, points, tree)
 
     # test_rrt_reverse(obstacles)
 
@@ -132,7 +152,7 @@ def grow_reverse_tree(obstacles, final_pose=RRT.pose_deg(3.5, 5.0, 180)):
     tree = RRT.Tree(env_map, initial_pose=final_pose_rev, consts=consts)
     
     # Grow the tree
-    done = tree.grow_to(start_pose_rev, trange(10000), 3*60, finish=True, star=True)
+    done = tree.grow_to(start_pose_rev, trange(10000), 3*60, finish=False, star=True)
     print(f"{done=}")
     if done:
         print(tree.get_node(start_pose_rev))
@@ -280,7 +300,7 @@ def test_approximator(obstacles):
 def bound(low, high, value):
      return max(low, min(high, value))
             
-def mujoco_sim(env, points):
+def mujoco_sim(env, points, tree):
     #function used to bound output of controllers
     
 
@@ -321,7 +341,7 @@ def mujoco_sim(env, points):
 
     workspace_center = np.array([0, 0]) # Coordinate center of workspace
     workspace_size = np.array([30, 30]) # Dimensions of workspace
-    env_map = RRT.Map(obstacles, 0.1, workspace_center, workspace_size)
+    env_map = RRT.Map(obstacles, consts=consts)
     starttime = time.time()
     i = 0
     n = 0
@@ -378,7 +398,7 @@ def mujoco_sim(env, points):
             i = bound(0, points.shape[0]-1, i)
             
         if n % 10 == 0:
-            points2, reroute = local_planner(state, obstacles, moving_obstacles, points, i)
+            points2, reroute = local_planner(state, obstacles, moving_obstacles, points, i, tree)
             if reroute == True:
                 points = points2
                 i = 0
@@ -393,7 +413,7 @@ def mujoco_sim(env, points):
     ax.axis("equal")
     plt.show()
 
-def local_planner(state, obstacles, moving_obstacles, points, i):
+def local_planner(state, obstacles, moving_obstacles, points, i, tree : RRT.Tree):
     reroute = False # used for resetting the index i
     offset = consts.offset # amount of points offsetted from moving obstacle   
 
@@ -441,23 +461,14 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
         # check if distane between goal and state is within the lookahead distance
         if np.linalg.norm(start[:2] - first_coliding_point[:2]) < consts.collision_offset_m:
             print("collision within range")
+
+            state_rev = steer.reverse_pose(state.copy())
             
-            # use smaller map to speed up RRT
-            workspace_center = np.array([(start[0]+goal[0])/2, (start[1]+goal[1]/2)]) # Coordinate center of workspace
-            workspace_size = np.array([max(start[0]+goal[0]+0.1, 1.6), max(start[1]+goal[1], 1.6)]) # Dimensions of workspace
+            tree.map.set_obstacles(np.vstack((obstacles,moving_obstacles)))
 
-            # now use all obstacles
-            env_map = RRT.Map(np.vstack((obstacles,moving_obstacles)), workspace_center=workspace_center, workspace_size=workspace_size, vehicle_radius=consts.vehicle_radius) # checks whole space, noy only workspace
-        
-            # Initialise a RR tree
-            tree = RRT.Tree(env_map, initial_pose=start, consts=consts, local_planner = True)
-
-            #new_angle = np.arctan2(np.cos(start[2]) + np.cos(goal[2]), np.sin(start[2]) + np.sin(goal[2]))
-
-            #print(f"{new_angle=}")
-        
             # Grow the tree to the final pose
-            done = tree.grow_to(goal, trange(200), 0.25, star=False)
+            done, _ = tree.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
+            # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
             
             # fig, ax = plt.subplots()
             # env_map.plot(ax)    # plot the environment (obstacles)   
@@ -466,15 +477,18 @@ def local_planner(state, obstacles, moving_obstacles, points, i):
             # ax.scatter(goal[0], goal[1])
             
             if done:
-                path = tree.path_to(goal)
+                print("---> Found new path!")
+                path = tree.path_to(state_rev)
                 #path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
                 #path.print()
                 if path is not None:
-                    updated_points = path.interpolate_poses(d=0.05) # new path to goal
-                    points = np.vstack([updated_points, future_points]) # combine new and old path
+                    updated_points = path.interpolate_poses(d=consts.point_resolution, reverse=True) # new path to goal
+                    points = updated_points # combine new and old path
                     reroute = True # used to reset index
                 else:
                     print(f"Could not find path, even though there should be one!!!")
+            else:
+                print("---> No path found!")
 
                 # ax.scatter(updated_points[:,0], updated_points[:,1], c=range(updated_points.shape[0]), cmap='summer')
 
