@@ -38,188 +38,30 @@ class consts():
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
 
-#Define start pose
-start_pose = RRT.pose_deg(-3.5, 9.25, 180)
 
 # -----------------------------------------------------------------------------
-# Define main fucntion
+# Define main function
 # -----------------------------------------------------------------------------
 
 def main():
+    # Deifne the start and end points
+    start_pose = RRT.pose_deg(3.5, 9.25, 0)
+    final_pose=RRT.pose_deg(3.5, 5.0, 180)
+    
     # Create environment and extract relevant information
-    env = carenv.Car(render=False)
-    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
-    # [x, y, rotation, length, width]
-
-    #test_pygame(start_coord, goal_coord, workspace_size, workspace_center, obstacles)
-
-    # points, ax = test_rrt(obstacles, initial_pose)
-    # # plt.show()
-    # env = carenv.Car(render=True)
-    # mujoco_sim(env, points)
-
-
-    grow = False
-
-    if grow:
-        tree = grow_reverse_tree(obstacles)
-        with open("tree.pickle", "wb") as outfile:
-            # "wb" argument opens the file in binary mode
-            pickle.dump(tree, outfile)
-    else:
-        print("loading...")
-        with open("tree.pickle", "rb") as infile:
-            tree : RRT.Tree = pickle.load(infile)
-        print("loaded.")
-
-    # tree = grow_reverse_tree(obstacles)
-    start_pose_rev = steer.reverse_pose(start_pose.copy())
-    tree.add_path_to(start_pose_rev, modify_angle=False, n_closest=100, i_break=25)
-    path = tree.path_to(start_pose_rev)
-    if path is None:
-        print("no path found")
-        
-        exit()
-    points = path.interpolate_poses(d=consts.point_resolution, reverse=True)
     env = carenv.Car(render=True)
-    mujoco_sim(env, points, tree)
+    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
-    # test_rrt_reverse(obstacles)
-
-    #test_approximator(obstacles)
-
-# Kian, Thomas
-def test_rrt(obstacles, initial_pose=RRT.pose_deg(0, 0, 0), plot=True):
-
-    # Set up a environment map object (used for collisions and random point generation)
-    env_map = RRT.Map(obstacles, consts=consts)
+    # grow/load the tree
+    tree = test_rrt_reverse(obstacles, grow=False)
     
-    # Define end poses
-    final_pose = RRT.pose_deg(2.5, 5.0, -180)
-
-    # Initialise a RR tree
-    tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
-    
-    # Grow the tree to the final pose
-    done = tree.grow_to(final_pose, trange(10000), 3*60, finish=True, star=True) #2819
-    print(f"{done=}")
-
-    tree.print()
-
-    if plot:
-        fig, ax = plt.subplots()
-        env_map.plot(ax)    # plot the environment (obstacles)
-
-        # plot the edges of the tree
-        if len(tree.edges) < 2000:
-            for edge in tree.edges:
-                edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
-
-    # backtrack the tree to generate a path and a list of points
-    points = np.array([[0.0, 0.0, 0.0]])
-    if done:
-
-        path = tree.path_to(final_pose)
-        path.print()
-        points = path.interpolate_poses(d=consts.point_resolution)
-        if plot:
-            path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-            RRT.plot_points(ax, points, cmap='viridis')
-        
-    if plot:
-        # plot the start and endpoints
-        RRT.plot_pose(ax, initial_pose, color="green")
-        RRT.plot_pose(ax, final_pose, color="red")
-
-        ax.set_xlim(-4, 4)
-        ax.set_ylim(-4, 4)
-        plt.axis("equal")
-
-        plt.pause(0.1)
-
-    return points, ax
+    # Run the simulation
+    mujoco_sim(env, start_pose, tree)
 
 
-def grow_reverse_tree(obstacles, final_pose=RRT.pose_deg(3.5, -5.0, 180)):
-    # Set up a environment map object (used for collisions and random point generation)
-    env_map = RRT.Map(obstacles, consts=consts)
-
-    start_pose_rev = steer.reverse_pose(start_pose.copy())
-    final_pose_rev = steer.reverse_pose(final_pose.copy())
-
-    # Initialise a RR tree
-    tree = RRT.Tree(env_map, initial_pose=final_pose_rev, consts=consts)
-    
-    # Grow the tree
-    done = tree.grow_to(start_pose_rev, trange(10000), 5*60, finish=False, star=True)
-    print(f"{done=}")
-    if done:
-        print(tree.get_node(start_pose_rev))
-        path = tree.path_to(start_pose_rev)
-    
-    tree.print()
-    
-    
-    fig, ax = plt.subplots()
-    env_map.plot(ax)    # plot the environment (obstacles)
-
-    # plot the edges of the tree
-    for edge in tree.edges:
-        edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
-
-    # plot the start and endpoints
-    RRT.plot_pose(ax, start_pose, color="green")
-    RRT.plot_pose(ax, final_pose, color="red")
-
-    ax.set_xlim(-4, 4)
-    ax.set_ylim(-4, 4)
-    plt.axis("equal")
-    points = None
-    if done:
-        path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-        path.print()
-        points = path.interpolate_poses(d=consts.point_resolution, reverse=True)
-        plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-
-    plt.show()
-
-    return tree
-
-
-def test_rrt_reverse(obstacles):
-    np.random.seed(42)
-
-    # Set up a environment map object (used for collisions and random point generation)
-    env_map = RRT.Map(obstacles, consts=consts)
-
-    # Define start and end poses
-    initial_pose = RRT.pose_deg(2.5, 5.0, 0)
-    final_pose = RRT.pose_deg(2.5, 7.0, 0)
-    final_poses = [ RRT.pose_deg(2.5, 7.0, 180),
-                    RRT.pose_deg(2.5, -7.0, 180),
-                    RRT.pose_deg(2.5, -5.0, 180),
-                    RRT.pose_deg(2.5, -2.5, 180),
-                    RRT.pose_deg(2.5, -9.0, 180),
-                    RRT.pose_deg(2.5, 2.5, 180),
-                    RRT.pose_deg(2.5, 9.0, 180),
-                    RRT.pose_deg(-2.5, 5.0, 0),
-                    RRT.pose_deg(-2.5, 7.0, 0),
-                    RRT.pose_deg(-2.5, -7.0, 0),
-                    RRT.pose_deg(-2.5, -5.0, 0),
-                    RRT.pose_deg(-2.5, -2.5, 0),
-                    RRT.pose_deg(-2.5, -9.0, 0),
-                    RRT.pose_deg(-2.5, 2.5, 0),
-                    RRT.pose_deg(-2.5, 9.0, 0)]
-
-    grow = False
-
+def test_rrt_reverse(obstacles, grow=False, final_pose=RRT.pose_deg(3.5, -5.0, 180)):
     if grow:
-        # Initialise a RR tree
-        tree = RRT.Tree(env_map, initial_pose=initial_pose, consts=consts)
-
-        # Grow the tree
-        tree.grow_to(final_pose, trange(10000), 3*60, star=True, finish=False)
-
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose)
         with open("tree.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
@@ -228,70 +70,7 @@ def test_rrt_reverse(obstacles):
         with open("tree.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
-
-
-    time_start = time.time()
-
-    success, _ = tree.add_path_to(final_pose, modify_angle=False, n_closest=20, i_break=3)
-    if success:
-        path = tree.path_to(final_pose)
-
-    time_end = time.time()
-
-    print(f"time = {time_end - time_start}")
-
-    print(f"{success=}")
-
-    tree.print()
-    
-    fig, ax = plt.subplots()
-    env_map.plot(ax)    # plot the environment (obstacles)
-
-    # plot the edges of the tree
-    for edge in tree.edges:
-        edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.3, s=0.4)
-
-    # plot the start and endpoints
-    RRT.plot_pose(ax, initial_pose, color="green")
-    RRT.plot_pose(ax, final_pose, color="red")
-
-    for final_pose in final_poses:
-        RRT.plot_pose(ax, final_pose, color="red")
-        tree.map
-        success, _ = tree.add_path_to(final_pose, modify_angle=False, n_closest=50, i_break=15)
-        if success:
-            path = tree.path_to(final_pose)
-            path.plot(ax, endpoint=True, color="red", linewidth=3, alpha=1.0, s=1.0)
-            points = path.interpolate_poses(d=consts.point_resolution)
-            plt.scatter(points[:,0], points[:,1], c=range(points.shape[0]), cmap='viridis')
-            # for point in points:
-            #     RRT.plot_pose(ax, point)
-
-    # ax.set_xlim(-4, 4)
-    # ax.set_ylim(-4, 4)
-    plt.axis("equal")
-
-    plt.show()
-
-
-def test_approximator(obstacles):
-    print("Testing approximator")
-    DA = Approximator.DubbinsApproximator(turning_radius=consts.turning_radius)
-
-    env_map = RRT.Map(obstacles, consts=consts)
-
-    start_pose = env_map.random_pose()
-    end_pose = env_map.random_pose()
-
-    # Options for the interpolation are:
-    # Approximator.InterpolationType.Interpolated (interpolates value, should be pretty good most of the time)
-    # Approximator.InterpolationType.Nearest (looks up nearest value, should be a bit worse than interpolate, but might handle discontinuities better)
-    # Approximator.InterpolationType.UpperBound (should always be bigger or equal to the true value, not implemented yet)
-    dist_approximated = DA.lookup(start_pose, end_pose, Approximator.InterpolationType.Nearest)
-    dist_true = steer.optimal_path(start_pose, end_pose, turning_radius).length
-
-    print(f"{dist_true=}")
-    print(f"{dist_approximated=}")
+    return tree
 
 
 # Fabio    
@@ -299,10 +78,7 @@ def test_approximator(obstacles):
 def bound(low, high, value):
      return max(low, min(high, value))
             
-def mujoco_sim(env, points, tree):
-    #function used to bound output of controllers
-    
-
+def mujoco_sim(env, start_pose, tree):
     #function for PID controller
     class PIDcontroller():
 
@@ -335,6 +111,14 @@ def mujoco_sim(env, points, tree):
     longitudal_pid = PIDcontroller(15, 0, 3)
 
     state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) #start with reset
+    
+    start_pose_rev = steer.reverse_pose(state.copy())
+    tree.add_path_to(start_pose_rev, modify_angle=False, n_closest=100, i_break=25)
+    path = tree.path_to(start_pose_rev)
+    if path is None:
+        print("no path found")
+        return
+    points = path.interpolate_poses(d=consts.point_resolution, reverse=True)
 
     original_points = points.copy()
 

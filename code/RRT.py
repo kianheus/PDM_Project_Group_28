@@ -495,6 +495,21 @@ class Tree():
             # plt.show()
         
         return points, reroute
+    
+    
+    def grow_reverse_tree(obstacles, consts, final_pose, itera=trange(10000), max_seconds=5*60):
+        # Set up a environment map object (used for collisions and random point generation)
+        env_map = RRT.Map(obstacles, consts=consts)
+
+        final_pose_rev = steer.reverse_pose(final_pose.copy())
+
+        # Initialise a RR tree
+        tree = Tree(env_map, initial_pose=final_pose_rev, consts=consts)
+        
+        # Grow the tree
+        tree.grow_to(steer.pose_deg(0, 0, 0), itera, max_seconds, finish=False, star=True)
+
+        return tree
 
 def plot_pose(ax, pose, length=0.1, **kwargs):
     kwargs["linewidth"] = 3
