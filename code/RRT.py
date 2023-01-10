@@ -326,8 +326,10 @@ class Tree():
             # add path to tree
             self.add_node(self.nodes[-1], path)
             return True, path
-
-        return True, node.parent_edge.path
+        if node.parent_edge is not None:
+            return True, node.parent_edge.path
+        else:
+            return False, None
 
     '''
     This function finds a path from a node on the tree to the new node.
