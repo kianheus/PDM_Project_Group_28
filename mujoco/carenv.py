@@ -3,6 +3,7 @@ import mujoco
 import mujoco_viewer
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from PIL import Image
 
 # -----------------------------------------------------------------------------
 # Custom environment class using the mujoco physics simulation and the mujoco_viewer for visualisation
@@ -11,7 +12,7 @@ from scipy.spatial.transform import Rotation as R
 class Car(core.Env):
     
     # initialisation of environment
-    def __init__(self, render = True):
+    def __init__(self, mode):
         
         # load mujoco models and intialise the data
         self.model = mujoco.MjModel.from_xml_path('../mujoco/models/hospital.xml')
@@ -21,9 +22,15 @@ class Car(core.Env):
         self.counter = 0
         self.bedspeed = 1
         
-        # initiase visualisation window
-        if render == True:   
+        self.mode = mode
+        
+        # initiase visualisation window for live rendering
+        if self.mode == 1:   
             self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, width = 1000, height = 1000, hide_menus = True)
+        
+        # initiase visualisation window for offscreen rendering
+        elif self.mode == 2: 
+            self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, 'offscreen')
 
     # reset mujoco environment
     def reset(self, x, y, theta):
@@ -78,9 +85,21 @@ class Car(core.Env):
         return state, obstacles, moving_obstacles
     
     # render a frame
-    def render(self, mode):
+    def render(self):
+        # live render
+        if self.mode == 1:
+            self.viewer.render()
+            
+        # offscreen render
+        elif self.mode ==2:
+            img = self.viewer.read_pixels(camid=1)
+            im = Image.fromarray(img)
+            im.save("../videoframes/frame_{}.jpeg".format(self.counter))
+        
+    # render a frame
+    def off_screen_render(self, mode):
         self.viewer.render()
-    
+        
     # set the desired location for the vehicle
     def set_position(self, x, y, theta):
         self.data.qpos = [x,y,0,np.cos(theta/2),0,0,np.sin(theta/2),0,0,0,0,0,0,0,0,0] # x,y,z, queternion [0, 1, 2, 3], ???
