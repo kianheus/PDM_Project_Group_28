@@ -36,7 +36,7 @@ class consts():
     lookahead_m = 3.0
     lookahead : int = int(lookahead_m // point_resolution)
     workspace_center = np.array([0, 0])
-    workspace_size = np.array([30, 30])
+    workspace_size = np.array([20, 20])
     recompute_error_treshold = 2.0
 
 
@@ -46,7 +46,7 @@ class consts():
 
 def main():
     # Deifne the start and end points
-    start_pose = RRT.pose_deg(4.0, -7.0, 90)
+    start_pose = RRT.pose_deg(3.0, -5.0, 0)
     final_pose = RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
@@ -54,26 +54,54 @@ def main():
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
     
     # tree.lookahead = consts.lookahead
     
     tree.print()
     
     
+    fig = plt.figure(1)
+    ax = fig.gca()
+    # ax = tree.plot(ax)
+    tree.map.plot(ax)
+    RRT.plot_pose(ax, start_pose, color="green")
+    RRT.plot_pose(ax, final_pose, color="red")
+    plt.pause(0.1)
     
-    # ax = tree.plot()
-    # RRT.plot_pose(ax, start_pose, color="green")
-    # RRT.plot_pose(ax, final_pose, color="red")
-    # plt.pause(0.1)
     
+    plt.figure(2)
     times = 5*(0.5+np.arange(len(tree.node_count_per_second)))
+    print(f"{sum(tree.node_count_per_second)=}")
+    print(f"{sum(tree.attempted_node_count_per_second)=}")
     plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Attempted new nodes")
     plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added")
     plt.xlabel("Time (s)")
     plt.ylabel("Rate of nodes being added (nodes per 5 seconds)")
     plt.title("Rate of node addition as tree grows")
     plt.legend()
+    
+    # plt.show()
+    
+    plt.figure(3)
+    
+    plt.plot(tree.goal_distance)
+    
+    
+    final_pose_rev = steer.reverse_pose(final_pose.copy())
+    straight_line_dists = np.linalg.norm(tree.node_poses[:,:2] - final_pose_rev[:2],axis=1)
+    print(f"{straight_line_dists.shape=}")
+    print(f"{tree.node_distances.shape=}")
+    
+    ratio = tree.node_distances / straight_line_dists
+    
+    plt.figure(4)
+    plt.scatter(ratio, ratio*0, c=range(len(ratio)))
+    plt.hist(ratio, bins=20)
+    
+    plt.figure(5)
+    # print(tree.mean_ratios)
+    plt.plot(tree.mean_ratios)
     
     # plt.plot(times, tree.rewire_per_second)
     
@@ -85,13 +113,13 @@ def main():
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=2*60)
-        with open("tree5.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
+        with open("tree14.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree5.pickle", "rb") as infile:
+        with open("tree14.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree

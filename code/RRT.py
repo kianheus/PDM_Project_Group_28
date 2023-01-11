@@ -156,7 +156,12 @@ class Tree():
         self.node_count_per_second = [0]
         self.attempted_node_count_per_second = [0]
         self.rewire_per_second = [0]
-        self.growth_start_time = 0
+        
+        self.goal_distance = [np.NaN]
+        self.goal_idx = None
+        self.mean_ratios = []
+        
+        self.final_pose_rev = None
         
         if local_planner == True:
             
@@ -253,12 +258,25 @@ class Tree():
                 if star:
                     if neighbouring_node_ids.shape[0] > 0:  
                         self.rewire(neighbouring_node_ids)
-                if finish:
+                if True or finish: ## is being manually overriden
                     done_single, path = self.connect_to_newest_node(end_pose)
+                    if done_single and not done:
+                        self.goal_idx = len(self.nodes) - 1
+                        print(f"--> Found path ({self.goal_idx}), Distance = {self.node_distances[self.goal_idx]}")
                     done |= done_single
                 if finish and done:
                     print("Found a path.")
                     break
+            if self.goal_idx is not None:
+                # add distance to goal to list
+                self.goal_distance.append(self.node_distances[self.goal_idx])
+            else:
+                self.goal_distance.append(np.NaN)
+                
+            straight_line_dists = np.linalg.norm(self.node_poses[:1000,:2] - self.final_pose_rev[:2],axis=1)
+            ratio = self.node_distances[:1000] / straight_line_dists
+            self.mean_ratios.append(np.mean(ratio[1:]))
+            
             added_node, neighbouring_node_ids = self.grow_single(end_pose, informed=informed, set_angle=set_angle)
         if not finish:
             done, _ = self.add_path_to(end_pose, modify_angle=False, n_closest=100, i_break=40)
@@ -529,6 +547,7 @@ class Tree():
 
         # Initialise a RR tree
         tree = Tree(env_map, initial_pose=final_pose_rev, consts=consts)
+        tree.final_pose_rev = final_pose_rev
         
         # Grow the tree
         tree.grow_to(steer.pose_deg(0, 0, 0), itera, max_seconds, finish=False, star=True)
