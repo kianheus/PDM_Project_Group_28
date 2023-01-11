@@ -38,7 +38,7 @@ class consts():
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
     recompute_error_treshold = 2.0
-
+    render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
 
 # -----------------------------------------------------------------------------
 # Define main function
@@ -50,7 +50,7 @@ def main():
     final_pose = RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(mode=consts.render_mode)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
@@ -183,7 +183,7 @@ def mujoco_sim(env, start_pose, tree):
         ########################## sim ##########################
         action = np.array([steering_angle,-throttle])  #action: first numer [-0.38, 0.38] - = right, + = left. Second number [unconstrained] - backward. + = forwar
         state, obstacles, moving_obstacles = env.step(action) #set step in environment
-        env.render(mode = True) # turn rendering on or off
+        env.render() 
         states = np.vstack((states, state))
 
         
