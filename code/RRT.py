@@ -367,6 +367,11 @@ class Tree():
             if i>i_break:
                 break
             steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
+            
+            if path_dist_approx[i] - steering_path.length > 3.0:
+                # print("approximation is very wrong, ignoring point")
+                continue
+            
             # steering_path = potential_steering_paths[shortest_path_idx]
             parent_coord_idx = valid_indices[shortest_path_idx]
 
