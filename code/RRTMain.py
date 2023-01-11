@@ -50,35 +50,48 @@ def main():
     final_pose = RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
-    env = carenv.Car(render=True)
+    env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
     
-    tree.lookahead = consts.lookahead
+    # tree.lookahead = consts.lookahead
     
     tree.print()
+    
+    
+    
     # ax = tree.plot()
     # RRT.plot_pose(ax, start_pose, color="green")
     # RRT.plot_pose(ax, final_pose, color="red")
     # plt.pause(0.1)
     
+    times = 5*(0.5+np.arange(len(tree.node_count_per_second)))
+    plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Attempted new nodes")
+    plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Rate of nodes being added (nodes per 5 seconds)")
+    plt.title("Rate of node addition as tree grows")
+    plt.legend()
+    
+    # plt.plot(times, tree.rewire_per_second)
+    
     # Run the simulation
-    mujoco_sim(env, start_pose, tree)
+    # mujoco_sim(env, start_pose, tree)
     
     plt.show()
 
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
-        with open("tree4.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=2*60)
+        with open("tree5.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree3.pickle", "rb") as infile:
+        with open("tree5.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree

@@ -153,6 +153,11 @@ class Tree():
         self.dummy_counter = 0
         self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
         
+        self.node_count_per_second = [0]
+        self.attempted_node_count_per_second = [0]
+        self.rewire_per_second = [0]
+        self.growth_start_time = 0
+        
         if local_planner == True:
             
             #moving_obstacle = self.map.obstacles[-1,:]
@@ -178,6 +183,7 @@ class Tree():
     Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
     '''
     def add_node(self, start_node : Node, path : steer.Path):
+        self.node_count_per_second[-1] += 1
         node = start_node
         for segment in path.segments:
             path_new = steer.PathSimple(segment)
@@ -193,6 +199,7 @@ class Tree():
     This function selects a random pose in the environment (which is not in colision) and connects it to the graph
     '''
     def grow_single(self, end_pose=None, informed = False, set_angle=None):
+        self.attempted_node_count_per_second[-1] += 1
         if informed:
             valid_node = False
             while valid_node == False:
@@ -226,6 +233,9 @@ class Tree():
     The function returns true if a path has been found.
     '''
     def grow_to(self, end_pose : np.ndarray, iter = range(100), max_seconds = 180, star = True, finish = True, informed = False, set_angle=None, local_planner=False):
+        growth_start_time = time.time()
+        next_second_time = growth_start_time + 5.0
+        
         close_time=time.time() + max_seconds
         added_node = True
         done = False
@@ -234,6 +244,11 @@ class Tree():
             if time.time()>close_time:
                 print("Time limit met, stopping.")
                 break
+            if time.time() > next_second_time:
+                next_second_time += 5.0
+                self.node_count_per_second.append(0)
+                self.attempted_node_count_per_second.append(0)
+                self.rewire_per_second.append(0)
             if added_node:
                 if star:
                     if neighbouring_node_ids.shape[0] > 0:  
@@ -413,6 +428,7 @@ class Tree():
             if new_neighbouring_distance_origin < neighbouring_distance_origin:
                 #self.dummy_counter += 1
                 #print(f"{self.dummy_counter=}")
+                self.rewire_per_second[-1] += 1
                 
                 discrete_path = path.interpolate(d=self.collision_resolution)
                 
