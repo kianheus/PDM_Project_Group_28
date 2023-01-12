@@ -23,6 +23,7 @@ gym
 mujoco-python-viewer
 scipy
 pillow
+pyyaml
 ```
 
 ## Installation
