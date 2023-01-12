@@ -13,18 +13,18 @@ import Approximator
 # -----------------------------------------------------------------------------
 # Define class that executes the RRT algorithm
 # -----------------------------------------------------------------------------
-'''
-Generate a pose at position (x, y) and at an angle t in degrees
-'''
+
+#Generate a pose at position (x, y) and at an angle t in degrees
 def pose_deg(x, y, t):
     return np.array([x, y, np.deg2rad(t)])
 
 
 '''
 A single node in the RR tree.
-A node has a given position/angle.
-Each node also has a backreference to the edge leading to it, as well as the previous node visited.
-Finally, each node has a set distance from the origin point.
+A node has a given position and angle.
+Each node also has a backreference to the node and edge leading to it (its parent), 
+as well as the edges following from it (its children).
+Finally, each node has a (Dubins) distance from the origin point.
 '''
 class Node():
     def __init__(self, pose : np.ndarray, distance_from_parent : float = 0.0, parent_node = None, parent_edge=None):
@@ -43,7 +43,7 @@ class Node():
 '''
 An edge is a connection between two nodes of the RR tree.
 Each edge has a reference to a start node and an end node. Note that the end node will also have a reference to the start node and this edge.
-Finally, the edge has a path object, which in this case is a Dubbins Path
+Finally, the edge has a path object, which in this case is a Dubins Path
 '''
 class Edge():
     def __init__(self, start_node : Node, path : steer.Path):
@@ -71,6 +71,7 @@ class Map():
         self.workspace_center = workspace_center
         self.workspace_size = workspace_size
 
+    # Load in the set of obstacles into the Map object
     def set_obstacles(self, obstacles):
         self.obstacles = obstacles
         self.obstacle_1 = np.atleast_2d(self.obstacles[:,0] - self.obstacles[:,3]/2)
@@ -78,6 +79,8 @@ class Map():
         self.obstacle_3 = np.atleast_2d(self.obstacles[:,1] - self.obstacles[:,4]/2)
         self.obstacle_4 = np.atleast_2d( self.obstacles[:,1] + self.obstacles[:,4]/2)
 
+    # Check for a collision of a number of nodes along all obstacles. 
+    # If any of the collision checks return True, a collision has been detected
     def collision_check_array(self, points : np.ndarray) -> np.ndarray:
         points = np.atleast_2d(points)
         points_x = np.atleast_2d(points[:,0]).T
@@ -88,19 +91,11 @@ class Map():
         a &= points_y - self.vehicle_radius < self.obstacle_4
         return a.any(axis=1)
 
+    # Single point collision check
     def collision_check(self, points : np.ndarray) -> bool:
         return self.collision_check_array(points).any()
 
-
-    def collision_check_single(self, point : np.ndarray) -> bool:
-        for obstacle in self.obstacles:
-            if point[0] + self.vehicle_radius > obstacle[0] - obstacle[3]/2 and point[0] - self.vehicle_radius < obstacle[0] + obstacle[3]/2\
-                and point[1] + self.vehicle_radius > obstacle[1] - obstacle[4]/2 and point[1] - self.vehicle_radius < obstacle[1] + obstacle[4]/2:
-                return True
-        return False
-    
-    
-
+    # Creates (x,y) coordinates for a new point in a collision-free position
     def random_position(self) -> np.ndarray:
         collision = True
         while collision:
@@ -108,11 +103,13 @@ class Map():
             collision = self.collision_check(new_xy)
         return new_xy
 
+    # Randomly set the angle of a new point
     def random_pose(self) -> np.ndarray:
         # new_theta = (np.random.beta(2, 2) *2*np.pi - np.pi) % (2*np.pi)
         new_theta = np.random.uniform(low=-np.pi, high=np.pi)
         return np.hstack((self.random_position(), new_theta))
 
+    # Plot obstacles
     def plot(self, ax : plt.Axes):
         for obstacle in self.obstacles:
             margin = 0.2
@@ -168,15 +165,16 @@ class Tree():
             self.add_path_to(new_pose2, modify_angle=False)
             
 
-
+    # Output basic information about the tree
     def print(self):
         print(f"Tree:")
         print(f"{len(self.nodes)} nodes")
         print(f"{len(self.edges)} edges")
 
-    '''
-    Function to add a new node to the tree. Note that this function breaks the dubbins path up into segments, thus generating more nodes in the tree.
-    '''
+    
+    #Function to add a new node to the tree. Note that this function breaks the 
+    # Dubins path up into segments, thus generating more nodes in the tree.
+    
     def add_node(self, start_node : Node, path : steer.Path):
         node = start_node
         for segment in path.segments:
@@ -187,11 +185,9 @@ class Tree():
             self.edges.append(new_edge)
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
             self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
-        # print("Added new node")
 
-    '''
-    This function selects a random pose in the environment (which is not in colision) and connects it to the graph
-    '''
+    
+    #Function to select a random collision-free pose in the environment and connects it to the graph
     def grow_single(self, end_pose=None, informed = False, set_angle=None):
         if informed:
             valid_node = False
@@ -249,6 +245,7 @@ class Tree():
             done, _ = self.add_path_to(end_pose, modify_angle=False, n_closest=100, i_break=40)
         return done
 
+    # Grow an RR tree without stopping if the goal position has been reached
     def grow_blind(self, iter = range(100), max_seconds = 180):
         close_time=time.time() + max_seconds
         added_node = True
@@ -342,7 +339,7 @@ class Tree():
     '''
     This function finds a path from a node on the tree to the new node.
     If this path is in collision, it is not added to the tree.
-    Using an upper bound on the shortest path to a node (dubbins path), most nodes can be ignored when generating dubbins paths.
+    Using an upper bound on the shortest path to a node (Dubins path), most nodes can be ignored when generating Dubins paths.
     '''
     def add_path_to(self, new_pose : np.ndarray, modify_angle=True, n_closest=50, i_break=10) -> bool:
         valid_indices = np.argsort(np.linalg.norm(self.node_poses[:,:2] - new_pose[:2], axis=1))[:n_closest] # Select 10 closest nodes
@@ -438,13 +435,14 @@ class Tree():
                 self.node_distances = np.array([node.distance_from_origin for node in self.nodes])
 
 
-
+    # Updates the Dubins distance of a node and its children, recursively
     def distance_update(self, parent : Node, child : Node):
         child.distance_from_origin = child.distance_from_parent + parent.distance_from_origin
         child.children_nodes
         for grandchild in child.children_nodes:
             self.distance_update(child, grandchild)
 
+    # A local version of the RRT code to provide adaptive planning in an environment with moving obstacles
     def local_planner(self, state, obstacles, moving_obstacles, points, i : int):
         reroute = False # used for resetting the index i 
 
