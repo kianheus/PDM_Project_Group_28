@@ -14,15 +14,35 @@ Kian Heus (4876768)\
 
 * Prerequisites, libraries, etc
 
+```
+numpy
+matplotlib
+tqdm
+mujoco
+gym
+mujoco-python-viewer
+scipy
+pillow
+```
+
 ## Installation
 
 * How/where to download your program
 * Any modifications needed to be made to files/folders
+
+Process:
+```
+git clone https://github.com/kianheus/PDM_Legends
+
+conda env create -f environment.yml
+```
 
 ## Executing program
 
 * How to run the program
 * Step-by-step instructions
 ```
-code blocks for commands
+cd code
+conda activate group28rrt
+python RRTMain.py
 ```
