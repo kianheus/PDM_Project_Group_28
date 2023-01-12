@@ -163,8 +163,8 @@ class Tree():
         plot_pose(self.ax, self.nodes[0].pose, color="blue", s=1.0)
         
         self.ax.axis('off')
-        self.ax.set_xlim((-20, 20))
-        self.ax.set_ylim((-20, 20))
+        self.ax.set_xlim((-11, 11))
+        self.ax.set_ylim((-11, 11))
         
         self.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
         self.frame = 0

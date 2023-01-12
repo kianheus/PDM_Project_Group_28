@@ -47,19 +47,19 @@ class consts():
 def main():
     # Deifne the start and end points
     start_pose = RRT.pose_deg(4.0, -7.0, 90)
-    final_pose = RRT.pose_deg(-1.5, 9.25, 0)
+    final_pose = RRT.pose_deg(0.0, 0.0, 0)
 
     # Create environment and extract relevant information
     env = carenv.Car(mode=consts.render_mode)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
     
     tree.lookahead = consts.lookahead
     
     tree.print()
-    ax = tree.plot()
+    # ax = tree.plot()
     # fig, ax = plt.subplots()
     # fig.set_size_inches(18.5, 10.5)
     # tree.map.plot(ax)    # plot the environment (obstacles)
