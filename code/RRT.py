@@ -153,6 +153,22 @@ class Tree():
         self.dummy_counter = 0
         self.DA = Approximator.DubbinsApproximator(turning_radius=turning_radius)
         
+        self.fig, self.ax = plt.subplots()
+        self.fig.set_size_inches(10, 10)
+        self.map.plot(self.ax)    # plot the environment (obstacles)
+
+        # plot the edges of the tree
+        self.ax.axis("equal")
+            
+        plot_pose(self.ax, self.nodes[0].pose, color="blue", s=1.0)
+        
+        self.ax.axis('off')
+        self.ax.set_xlim((-20, 20))
+        self.ax.set_ylim((-20, 20))
+        
+        self.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+        self.frame = 0
+        
         if local_planner == True:
             
             #moving_obstacle = self.map.obstacles[-1,:]
@@ -167,7 +183,13 @@ class Tree():
             new_pose2 = np.hstack((pose_x, pose2_y, pose_angle))
             self.add_path_to(new_pose2, modify_angle=False)
             
-
+    def save_frame(self):
+        # print(f"save frame {self.frame}")
+        self.ax.set_axis_off()
+        self.fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+        self.fig.savefig(f"../export/tree/tree{self.frame:05}.png", bbox_inches='tight', pad_inches = 0, dpi=120)
+        self.frame += 1
+        # plt.pause(0.001)
 
     def print(self):
         print(f"Tree:")
@@ -185,6 +207,10 @@ class Tree():
             node = new_edge.end_node
             self.nodes.append(node)
             self.edges.append(new_edge)
+            
+            new_edge.path.plot(self.ax, endpoint=False, color="orange", linewidth=1, alpha=0.8)
+            self.save_frame()
+            
             self.node_poses = np.append(self.node_poses, np.atleast_2d(new_edge.end_node.pose), axis = 0)
             self.node_distances = np.append(self.node_distances, new_edge.end_node.distance_from_origin)
         # print("Added new node")

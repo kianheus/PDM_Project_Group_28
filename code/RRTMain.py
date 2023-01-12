@@ -38,7 +38,7 @@ class consts():
     workspace_center = np.array([0, 0])
     workspace_size = np.array([30, 30])
     recompute_error_treshold = 2.0
-    render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
+    render_mode = 0 # 0 = render off, 1 = render on 2 = offscreen render (for video)
 
 # -----------------------------------------------------------------------------
 # Define main function
@@ -54,31 +54,53 @@ def main():
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
     
     tree.lookahead = consts.lookahead
     
     tree.print()
-    # ax = tree.plot()
+    ax = tree.plot()
+    # fig, ax = plt.subplots()
+    # fig.set_size_inches(18.5, 10.5)
+    # tree.map.plot(ax)    # plot the environment (obstacles)
+
+    # plot the edges of the tree
+    # ax.axis("equal")
+        
+    # RRT.plot_pose(ax, tree.nodes[0].pose, color="blue", s=1.0)
+    
+    # plt.axis('off')
+    # plt.xlim((-20, 20))
+    # plt.ylim((-20, 20))
+    # for i, edge in zip(trange(500), tree.edges):
+        
+    #     # for edge in tree.edges[:i+1]:
+    #     edge.path.plot(ax, endpoint=False, color="orange", linewidth=1, alpha=0.8)
+            
+        
+        
+    #     fig.savefig(f"../export/tree/tree{i:05}.png", bbox_inches='tight', pad_inches = 0, dpi=120)
+        # plt.close()
+            
     # RRT.plot_pose(ax, start_pose, color="green")
     # RRT.plot_pose(ax, final_pose, color="red")
     # plt.pause(0.1)
     
     # Run the simulation
-    mujoco_sim(env, start_pose, tree)
+    # mujoco_sim(env, start_pose, tree)
     
     plt.show()
 
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
-        with open("tree4.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(100000), max_seconds=30*60)
+        with open("tree10.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree3.pickle", "rb") as infile:
+        with open("tree10.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
