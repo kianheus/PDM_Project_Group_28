@@ -15,6 +15,7 @@ import pickle
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches
+import matplotlib.cm as cm
 
 sys.path.append("../mujoco")
 
@@ -40,98 +41,50 @@ class consts():
     recompute_error_treshold = 2.0
 
 
+start_pose = RRT.pose_deg(3.0, -5.0, 0)
+final_pose = RRT.pose_deg(-6.0, 7.0, 90)
+
 # -----------------------------------------------------------------------------
 # Define main function
 # -----------------------------------------------------------------------------
 
 def main():
-    # Deifne the start and end points
-    start_pose = RRT.pose_deg(3.0, -5.0, 0)
-    final_pose = RRT.pose_deg(0.5, 8.0, 90)
-
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
-    # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
-    
-    # tree.lookahead = consts.lookahead
-    
-    tree.print()
+    test(obstacles)
     
     
-    fig = plt.figure(1)
-    ax = fig.gca()
-    # ax = tree.plot(ax)
-    tree.map.plot(ax)
-    RRT.plot_pose(ax, start_pose, color="green")
-    RRT.plot_pose(ax, final_pose, color="red")
+def test(obstacles):
+    env_map = RRT.Map(obstacles, consts=consts)
+
+    # Initialise a RR tree
+    
+    tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
+    ax = tree.plot()
+    RRT.plot_pose(ax, start_pose, color='green')
+    RRT.plot_pose(ax, final_pose, color='red')
     plt.pause(0.1)
     
-    plt.figure(2)
-    times = 5*(0.5+np.arange(len(tree.node_count_per_second)))
-    print(f"{sum(tree.node_count_per_second)=}")
-    print(f"{sum(tree.attempted_node_count_per_second)=}")
-    plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Rejected nodes", color="tab:red")
-    plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added", color="tab:blue")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Rate of nodes being added (nodes per 5 seconds)")
-    plt.title("Rate of node addition as tree grows")
-    plt.legend()
+    lengths = []
+    nodes = []
+    colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
     
-    plt.figure(7)
-    a = np.array(tree.attempted_node_count_per_second)
-    n = np.array(tree.node_count_per_second)
-    rs = n/a
-    plt.plot(times, (1-rs)*100)
-    plt.ylim((0, 100))
-    plt.ylabel("Rate of node rejection")
-    plt.xlabel("Time (s)")
-    
-    plt.figure(8)
-    plt.ylabel("Number of nodes in tree")
-    plt.xlabel("Time (s)")
-    plt.plot(times, np.cumsum(n))
-    
-    
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-
-    ax1.plot(times, (1-rs)*100, color="red")
-    ax1.set_ylim((0, 100))
-    ax1.set_ylabel("Rate of node rejection (%)")
-    ax1.set_xlabel("Time (s)")
-    ax2.plot(times, np.cumsum(n)*3, color="green")
-    ax2.set_ylabel("Number of nodes in tree")
-    
-    # plt.show()
-    
-    plt.figure(3)
-    
-    plt.plot(tree.goal_distance)
-    
-    
-    final_pose_rev = steer.reverse_pose(final_pose.copy())
-    straight_line_dists = np.linalg.norm(tree.node_poses[:,:2] - final_pose_rev[:2],axis=1)
-    print(f"{straight_line_dists.shape=}")
-    print(f"{tree.node_distances.shape=}")
-    
-    ratio = tree.node_distances / straight_line_dists
-    
-    plt.figure(4)
-    plt.scatter(ratio, ratio*0, c=range(len(ratio)))
-    plt.hist(ratio, bins=20)
-    
-    plt.figure(5)
-    # print(tree.mean_ratios)
-    plt.plot(tree.mean_ratios)
-    
-    # plt.plot(times, tree.rewire_per_second)
-    
-    # Run the simulation
-    # mujoco_sim(env, start_pose, tree)
-    
+    # Grow the tree
+    for i in trange(10):
+        tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
+        tree.final_pose_rev = start_pose
+        tree.grow_to(final_pose, trange(5000), 2*60, finish=True, star=True)
+        path = tree.path_to(final_pose)
+        lengths.append(path.length)
+        nodes.append(len(tree.nodes))
+        
+        path.plot(ax, color=next(colors), linewidth=1)
+        plt.pause(0.1)
+        
+    print(lengths)
+    print(nodes)
     plt.show()
 
 
