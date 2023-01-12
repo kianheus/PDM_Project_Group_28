@@ -1,0 +1,15 @@
+name: group28rrt
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - matplotlib
+  - tqdm
+  - scipy
+  - pillow
+  - pyyaml
+  - pip
+  - pip:
+    - mujoco
+    - gym
+    - mujoco-python-viewer
