@@ -47,14 +47,14 @@ class consts():
 def main():
     # Deifne the start and end points
     start_pose = RRT.pose_deg(3.0, -5.0, 0)
-    final_pose = RRT.pose_deg(-1.5, 9.25, 0)
+    final_pose = RRT.pose_deg(0.5, 8.0, 90)
 
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
     
     # tree.lookahead = consts.lookahead
     
@@ -69,17 +69,41 @@ def main():
     RRT.plot_pose(ax, final_pose, color="red")
     plt.pause(0.1)
     
-    
     plt.figure(2)
     times = 5*(0.5+np.arange(len(tree.node_count_per_second)))
     print(f"{sum(tree.node_count_per_second)=}")
     print(f"{sum(tree.attempted_node_count_per_second)=}")
-    plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Attempted new nodes")
-    plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added")
+    plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Rejected nodes", color="tab:red")
+    plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added", color="tab:blue")
     plt.xlabel("Time (s)")
     plt.ylabel("Rate of nodes being added (nodes per 5 seconds)")
     plt.title("Rate of node addition as tree grows")
     plt.legend()
+    
+    plt.figure(7)
+    a = np.array(tree.attempted_node_count_per_second)
+    n = np.array(tree.node_count_per_second)
+    rs = n/a
+    plt.plot(times, (1-rs)*100)
+    plt.ylim((0, 100))
+    plt.ylabel("Rate of node rejection")
+    plt.xlabel("Time (s)")
+    
+    plt.figure(8)
+    plt.ylabel("Number of nodes in tree")
+    plt.xlabel("Time (s)")
+    plt.plot(times, np.cumsum(n))
+    
+    
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+
+    ax1.plot(times, (1-rs)*100, color="red")
+    ax1.set_ylim((0, 100))
+    ax1.set_ylabel("Rate of node rejection (%)")
+    ax1.set_xlabel("Time (s)")
+    ax2.plot(times, np.cumsum(n)*3, color="green")
+    ax2.set_ylabel("Number of nodes in tree")
     
     # plt.show()
     
@@ -113,13 +137,13 @@ def main():
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
-        with open("tree14.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=10*60)
+        with open("tree16.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree14.pickle", "rb") as infile:
+        with open("tree16.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
