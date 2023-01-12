@@ -3,5 +3,5 @@ __pycache__/
 *$py.class
 *LOG*
 videoframes
-.idea
-.vscode
+.idea/
+.vscode/
