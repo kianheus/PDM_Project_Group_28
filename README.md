@@ -1,19 +1,18 @@
 # Application of Automated Guided Vehicles in a Hospital Environment
 
-**Course:** RO47005 - Planning and Decision Making
-**Group 28**
+**Course:** RO47005 - Planning and Decision Making\
+**Group 28**\
 Fabio Boekel (4855892)\
 Paula Gasco Claramunt (5725453)\
 Thomas Hettasch (5836905)\
-Kian Heus (4876768)
+Kian Heus (4876768)\
 
 ## Description
 
 
 ## Dependencies
 
-* Describe any prerequisites, libraries, OS version, etc., needed before installing program.
-* ex. Windows 10
+* Prerequisites, libraries, etc
 
 ## Installation
 
@@ -23,7 +22,7 @@ Kian Heus (4876768)
 ## Executing program
 
 * How to run the program
-* Step-by-step bullets
+* Step-by-step instructions
 ```
 code blocks for commands
 ```
