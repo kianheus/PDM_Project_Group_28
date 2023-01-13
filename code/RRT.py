@@ -401,6 +401,9 @@ class Tree():
                 break
             steering_path = steer.optimal_path(self.node_poses[valid_indices][shortest_path_idx], new_pose, self.turning_radius)
             
+            if steering_path is None:
+                continue
+            
             if path_dist_approx[i] - steering_path.length > 3.0:
                 # print("approximation is very wrong, ignoring point")
                 continue
