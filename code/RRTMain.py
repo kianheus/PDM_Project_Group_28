@@ -16,21 +16,15 @@ This file is structured as follows:
 import numpy as np
 from tqdm import trange
 import pickle
-
 import sys
+import struct
 
 sys.path.append("../mujoco")
 
 # Import from custom files
-import RRT
-import carenv
-import CarController
-import struct
-
-def create_unique_number(pose):
-    data = struct.pack('>3f', pose[0], pose[1], pose[2])
-    hex_data = data.hex()
-    return hex_data
+import RRT # everything related to the path
+import carenv # physics based environment and graphics
+import CarController # controlling the car based on path and apply it to the environment
 
 class consts():
     turning_radius = 0.8 #[m]
@@ -43,34 +37,38 @@ class consts():
     workspace_size = np.array([30, 30]) #[m,m]
     recompute_error_treshold = 2.0 #[m]
     render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
+    start_pose = RRT.pose_deg(4.0, -7.0, 90) #[m, m, deg]
+    final_pose = RRT.pose_deg(-1.5, -9.25, 0) #[m, m, deg]
+    
+# all grown trees
+# RRT.pose_deg(-1.5, -9.25, 0)
+# RRT.pose_deg(-1.5, 9.25, 0)
 
 # -----------------------------------------------------------------------------
 # Define main function
 # -----------------------------------------------------------------------------
 
 def main():
-    # Define the start and end points and angles
-    start_pose = RRT.pose_deg(4.0, -7.0, 90)
-    final_pose = RRT.pose_deg(-1.5, -9.25, 0)
-    
-    # RRT.pose_deg(-1.5, -9.25, 0)
-    # RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
     env = carenv.Car(mode=consts.render_mode)
-    initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
+    initial_pose, obstacles, moving_obstacles = env.reset(consts.start_pose) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
+    tree = load_grow_tree(obstacles, final_pose=consts.final_pose)
     tree.lookahead = consts.lookahead
     tree.print()    
     
     # Run the simulation
-    CarController.mujoco_sim(env, start_pose, tree, consts) 
+    CarController.mujoco_sim(env, consts.start_pose, tree, consts) 
 
-def test_rrt_reverse(obstacles, final_pose, grow=False):
+# checks final position if there is already a tree grown for it, otherwise grow tree and save to file
+def load_grow_tree(obstacles, final_pose):
     
+    #extract unique number based on the final_pose
     number = create_unique_number(final_pose)
+    
+    # file name used for grown tree files
     filename = "../trees/" + str(number) + ".pickle"
     try:
         with open(filename, "rb") as infile:
@@ -81,6 +79,12 @@ def test_rrt_reverse(obstacles, final_pose, grow=False):
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     return tree
+
+# creates an unique number based on the final pose
+def create_unique_number(pose):
+    data = struct.pack('>3f', pose[0], pose[1], pose[2])
+    hex_data = data.hex()
+    return hex_data
     
 if __name__ == '__main__':
     main()

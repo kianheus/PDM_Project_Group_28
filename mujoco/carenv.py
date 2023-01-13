@@ -33,14 +33,14 @@ class Car(core.Env):
             self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, 'offscreen')
 
     # reset mujoco environment
-    def reset(self, x, y, theta):
+    def reset(self, loc):
         
         # reset mujoco model and data
         mujoco.mj_resetCallbacks()
         mujoco.mj_resetData(self.model, self.data)
         
         # put car into new position
-        self.set_position(x, y, theta)
+        self.set_position(loc)
         
         #set one step of model to be sure that everything is initialised
         mujoco.mj_step(self.model, self.data) 
@@ -101,8 +101,8 @@ class Car(core.Env):
         self.viewer.render()
         
     # set the desired location for the vehicle
-    def set_position(self, x, y, theta):
-        self.data.qpos = [x,y,0,np.cos(theta/2),0,0,np.sin(theta/2),0,0,0,0,0,0,0,0,0] # x,y,z, queternion [0, 1, 2, 3], ???
+    def set_position(self, loc):
+        self.data.qpos = [loc[0],loc[1],0,np.cos(loc[2]/2),0,0,np.sin(loc[2]/2),0,0,0,0,0,0,0,0,0] # x,y,z, queternion [0, 1, 2, 3], ???
    
     # returns the state of the vehicle via mujoco sensors. x,y,z postion and orientation around the z-axis
     def get_sensor_data(self):

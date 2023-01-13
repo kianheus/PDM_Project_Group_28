@@ -44,7 +44,7 @@ def mujoco_sim(env, start_pose, tree, consts):
     lateral_pid = PIDcontroller(1, 0, 0)
     longitudal_pid = PIDcontroller(15, 0, 3)
 
-    state, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) #start with reset
+    state, obstacles, moving_obstacles = env.reset(start_pose) #start with reset
     
     start_pose_rev = steer.reverse_pose(state.copy())
     tree.add_path_to(start_pose_rev, modify_angle=False, n_closest=100, i_break=25)
