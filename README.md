@@ -5,7 +5,7 @@
 Fabio Boekel (4855892)\
 Paula Gasco Claramunt (5725453)\
 Thomas Hettasch (5836905)\
-Kian Heus (4876768)\
+Kian Heus (4876768)
 
 ## Description
 
