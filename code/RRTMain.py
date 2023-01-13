@@ -51,7 +51,10 @@ class consts():
 def main():
     # Define the start and end points and angles
     start_pose = RRT.pose_deg(4.0, -7.0, 90)
-    final_pose = RRT.pose_deg(-1.5, 9.25, 0)
+    final_pose = RRT.pose_deg(-1.5, -9.25, 0)
+    
+    # RRT.pose_deg(-1.5, -9.25, 0)
+    # RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
     env = carenv.Car(mode=consts.render_mode)
@@ -66,7 +69,7 @@ def main():
     CarController.mujoco_sim(env, start_pose, tree, consts) 
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
-    """
+    
     number = create_unique_number(final_pose)
     filename = "../trees/" + str(number) + ".pickle"
     try:
@@ -77,20 +80,7 @@ def test_rrt_reverse(obstacles, final_pose, grow=False):
         with open(filename, "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
-    
-    """
-    if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
-        with open("tree4.pickle", "wb") as outfile:
-            # "wb" argument opens the file in binary mode
-            pickle.dump(tree, outfile)
-    else:
-        print("loading...")
-        with open("tree3.pickle", "rb") as infile:
-            tree : RRT.Tree = pickle.load(infile)
-        print("loaded.")
     return tree
-   
     
 if __name__ == '__main__':
     main()
