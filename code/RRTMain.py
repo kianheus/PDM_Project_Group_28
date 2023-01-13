@@ -95,12 +95,12 @@ def main():
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
         tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(100000), max_seconds=30*60)
-        with open("tree10.pickle", "wb") as outfile:
+        with open("tree11.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree10.pickle", "rb") as infile:
+        with open("tree11.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
