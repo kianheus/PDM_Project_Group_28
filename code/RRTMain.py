@@ -56,76 +56,94 @@ def main():
     # grow/load the tree
     tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
     
+    start_pose_tree = tree.node_poses[0].copy()
+    
     # tree.lookahead = consts.lookahead
     
     tree.print()
     
+    plt.rcParams.update({'figure.autolayout': True})
+    plt.rcParams.update({
+        "font.family": "serif",
+        # "font.family": "Helvetica"
+    })
     
-    fig = plt.figure(1)
-    ax = fig.gca()
-    # ax = tree.plot(ax)
-    tree.map.plot(ax)
-    RRT.plot_pose(ax, start_pose, color="green")
-    RRT.plot_pose(ax, final_pose, color="red")
-    plt.pause(0.1)
     
-    plt.figure(2)
+    # fig = plt.figure(1)
+    # ax = fig.gca()
+    # # ax = tree.plot(ax)
+    # tree.map.plot(ax)
+    # RRT.plot_pose(ax, start_pose, color="green")
+    # RRT.plot_pose(ax, final_pose, color="red")
+    # plt.pause(0.1)
+    
+    plt.figure(2, figsize=(4,3.5))
     times = 5*(0.5+np.arange(len(tree.node_count_per_second)))
     print(f"{sum(tree.node_count_per_second)=}")
     print(f"{sum(tree.attempted_node_count_per_second)=}")
-    plt.bar(times, tree.attempted_node_count_per_second, width=5.0, label="Rejected nodes", color="tab:red")
-    plt.bar(times, tree.node_count_per_second, width=5.0, label="Nodes added", color="tab:blue")
+    plt.bar(times, [i/5 for i in tree.attempted_node_count_per_second], width=5.0, label="Rejected nodes", color="darkorange")
+    plt.bar(times, [i/5 for i in tree.node_count_per_second], width=5.0, label="Nodes added", color="dodgerblue")
+    plt.xlim((0, 175))
     plt.xlabel("Time (s)")
-    plt.ylabel("Rate of nodes being added (nodes per 5 seconds)")
-    plt.title("Rate of node addition as tree grows")
+    plt.ylabel("Rate of nodes being added\n(nodes per second)")
+    # plt.title("Rate of node addition as tree grows")
+    plt.text(max(times)*(3/5), max(tree.attempted_node_count_per_second) * (3.5/5)/5, f"Start pose = ({start_pose_tree[0]:.1f}m ,{start_pose_tree[1]:.1f}m ,{np.rad2deg(start_pose_tree[2]):.0f}°)", ha="center")
     plt.legend()
+    plt.savefig("bar.pdf", bbox_inches='tight')
+    # plt.rcParams.update({'font.size': 50})
+    # plt.rc('font', size=12)          # controls default text sizes
+    # plt.rc('axes', titlesize=12)     # fontsize of the axes title
+    # plt.rc('axes', labelsize=8)    # fontsize of the x and y labels
+    # plt.rc('xtick', labelsize=8)    # fontsize of the tick labels
+    # plt.rc('ytick', labelsize=8)    # fontsize of the tick labels
+    # plt.rc('legend', fontsize=20)    # legend fontsize
+    # plt.rc('figure', titlesize=20)  # fontsize of the figure title
     
-    plt.figure(7)
-    a = np.array(tree.attempted_node_count_per_second)
-    n = np.array(tree.node_count_per_second)
-    rs = n/a
-    plt.plot(times, (1-rs)*100)
-    plt.ylim((0, 100))
-    plt.ylabel("Rate of node rejection")
-    plt.xlabel("Time (s)")
+    # plt.figure(7)
+    # a = np.array(tree.attempted_node_count_per_second)
+    # n = np.array(tree.node_count_per_second)
+    # rs = n/a
+    # plt.plot(times, (1-rs)*100)
+    # plt.ylim((0, 100))
+    # plt.ylabel("Rate of node rejection")
+    # plt.xlabel("Time (s)")
     
-    plt.figure(8)
-    plt.ylabel("Number of nodes in tree")
-    plt.xlabel("Time (s)")
-    plt.plot(times, np.cumsum(n))
+    # plt.figure(8)
+    # plt.ylabel("Number of nodes in tree")
+    # plt.xlabel("Time (s)")
+    # plt.plot(times, np.cumsum(n))
     
     
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
+    # fig, ax1 = plt.subplots()
+    # ax2 = ax1.twinx()
 
-    ax1.plot(times, (1-rs)*100, color="red")
-    ax1.set_ylim((0, 100))
-    ax1.set_ylabel("Rate of node rejection (%)")
-    ax1.set_xlabel("Time (s)")
-    ax2.plot(times, np.cumsum(n)*3, color="green")
-    ax2.set_ylabel("Number of nodes in tree")
+    # ax1.plot(times, (1-rs)*100, color="red")
+    # ax1.set_ylim((0, 100))
+    # ax1.set_ylabel("Rate of node rejection (%)")
+    # ax1.set_xlabel("Time (s)")
+    # ax2.plot(times, np.cumsum(n)*3, color="green")
+    # ax2.set_ylabel("Number of nodes in tree")
     
-    # plt.show()
+    # # plt.show()
     
-    plt.figure(3)
+    # plt.figure(3)
+    # plt.plot(tree.goal_distance)
     
-    plt.plot(tree.goal_distance)
     
+    # final_pose_rev = steer.reverse_pose(final_pose.copy())
+    # straight_line_dists = np.linalg.norm(tree.node_poses[:,:2] - final_pose_rev[:2],axis=1)
+    # print(f"{straight_line_dists.shape=}")
+    # print(f"{tree.node_distances.shape=}")
     
-    final_pose_rev = steer.reverse_pose(final_pose.copy())
-    straight_line_dists = np.linalg.norm(tree.node_poses[:,:2] - final_pose_rev[:2],axis=1)
-    print(f"{straight_line_dists.shape=}")
-    print(f"{tree.node_distances.shape=}")
+    # ratio = tree.node_distances / straight_line_dists
     
-    ratio = tree.node_distances / straight_line_dists
+    # plt.figure(4)
+    # plt.scatter(ratio, ratio*0, c=range(len(ratio)))
+    # plt.hist(ratio, bins=20)
     
-    plt.figure(4)
-    plt.scatter(ratio, ratio*0, c=range(len(ratio)))
-    plt.hist(ratio, bins=20)
-    
-    plt.figure(5)
-    # print(tree.mean_ratios)
-    plt.plot(tree.mean_ratios)
+    # plt.figure(5)
+    # # print(tree.mean_ratios)
+    # plt.plot(tree.mean_ratios)
     
     # plt.plot(times, tree.rewire_per_second)
     
@@ -143,7 +161,7 @@ def test_rrt_reverse(obstacles, final_pose, grow=False):
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree16.pickle", "rb") as infile:
+        with open("tree15.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
