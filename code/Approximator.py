@@ -1,11 +1,12 @@
+# Import needed packages
 import numpy as np
-import Steering as steer
-
 from tqdm import trange
-# from matplotlib import pyplot as plt
 from scipy.interpolate import interpn
 import enum
 
+# Import from custom files
+import Steering as steer
+import RRT # everything related to the path
 
 shape = (21, 21, 21)
 turning_radius_g = 0.8
@@ -31,7 +32,7 @@ class DubbinsApproximator():
         for x in trange(len(self.xx)):
             for y in range(len(self.yy)):
                 for t in range(len(self.tt)):
-                    path = steer.optimal_path(RRT.pose_deg(0, 0, 0), RRT.pose_deg(self.xx[x], self.yy[y], self.tt[t]), turning_radius)
+                    path = steer.optimal_path(RRT.pose_deg(0, 0, 0), RRT.pose_deg(self.xx[x], self.yy[y], self.tt[t]), self.turning_radius)
                     z[x,y,t] = path.length if path is not None else 0.0
                     z[x,y,t] -= np.linalg.norm(np.array([self.xx[x], self.yy[y]]))
 

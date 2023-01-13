@@ -1,17 +1,18 @@
+# Import needed packages
 import numpy as np
+from matplotlib import pyplot as plt
 import sys
-
 sys.path.append("../mujoco")
 
 # Import from custom files
 import RRT
 import Steering as steer
-from matplotlib import pyplot as plt
 
+# function used for bounding the output of the PIDs
 def bound(low, high, value):
      return max(low, min(high, value))
  
-#function for PID controller
+# function for PID controller
 class PIDcontroller():
 
     def __init__(self, kp, ki, kd):
@@ -36,7 +37,8 @@ class PIDcontroller():
         self.pe = e # previous error used in differentiation
 
         return output
-            
+ 
+# opens mujoco environment, follows path using pid controller and track path of car           
 def mujoco_sim(env, start_pose, tree, consts):
 
     # initialise pid controllers
@@ -60,7 +62,6 @@ def mujoco_sim(env, start_pose, tree, consts):
     i = 0
     n = 0
     states = np.expand_dims(state.copy(), axis=0)
-    #simulate for 100 s
     reroute = False 
     
     while True:
@@ -91,10 +92,10 @@ def mujoco_sim(env, start_pose, tree, consts):
         throttle = longitudal_pid.pid(longitudal_error)
 
         ########################## Bounds and combining output of controlllers ##########################
-        #combine steering input
+        # combine steering input
         steering_angle = steering_angle_lateral + steering_angle_theta
 
-        #bounds
+        # bounds
         if points.shape == None:
             throttle = 0.1
         throttle = bound(-4, 4, throttle)

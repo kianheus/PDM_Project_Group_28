@@ -3,13 +3,11 @@
 For an example of how this code should be used, see SampleSteering.py
 -------------------------------------------------------------------
 """
-
+# Import needed packages
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import time
-import itertools
-from collections.abc import Iterable
+
 
 # Helper funciton to generate rotation matrix (3x3) for rotating theta radians about the z axis
 def rot(theta) -> np.ndarray:

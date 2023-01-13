@@ -1,13 +1,12 @@
-# -----------------------------------------------------------------------------
 # Import needed packages
-# -----------------------------------------------------------------------------
-
 import numpy as np
-import Steering as steer
-from tqdm import tqdm, trange
+from tqdm import trange
 from matplotlib import pyplot as plt
 from matplotlib import patches
 import time
+
+# Import from custom files
+import Steering as steer
 import Approximator
 
 # -----------------------------------------------------------------------------

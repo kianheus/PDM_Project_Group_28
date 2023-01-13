@@ -1,6 +1,9 @@
-import carenv
+# Import needed packages
 import numpy as np
 import time
+
+# Import from custom files
+import carenv
 
 #function used to bound output of controllers
 def bound(low, high, value):
@@ -40,7 +43,7 @@ longitudal_pid = PIDcontroller(1, 0, 0.1)
 # initialise environment
 env = carenv.Car(mode = 1) #load in Car environment
 
-state, obstacles, moving_obstacles = env.reset(0,0, 0) #start with reset
+state, obstacles, moving_obstacles = env.reset(np.array([0,0,0])) #start with reset
 
 starttime = time.time()
 
