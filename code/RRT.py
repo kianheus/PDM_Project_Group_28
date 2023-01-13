@@ -194,7 +194,7 @@ class Tree():
             while valid_node == False:
                 best_distance = np.partition(self.node_distances, 1)[1]
                 #best_distance = np.min(self.node_distances)
-                print("Hello", best_distance)
+                #print("Hello", best_distance)
                 sample_new_pose = self.map.random_pose()
                 distance_from_origin = steer.optimal_path(self.base_node.pose, sample_new_pose, self.turning_radius).length
                 distance_to_end = steer.optimal_path(sample_new_pose, end_pose, self.turning_radius).length

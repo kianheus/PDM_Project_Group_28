@@ -13,28 +13,24 @@ This file is structured as follows:
 """
 
 # Import needed packages
-import sys
-import time
 import numpy as np
-from tqdm import tqdm, trange
-from sys import exit
+from tqdm import trange
 import pickle
 
-from matplotlib import pyplot as plt
-from matplotlib import collections as mc
-from matplotlib import patches
+import sys
 
 sys.path.append("../mujoco")
 
 # Import from custom files
 import RRT
-import Steering as steer
 import carenv
-import Approximator
 import CarController
+import struct
 
-# np.random.seed(428)
-
+def create_unique_number(pose):
+    data = struct.pack('>3f', pose[0], pose[1], pose[2])
+    hex_data = data.hex()
+    return hex_data
 
 class consts():
     turning_radius = 0.8 #[m]
@@ -62,22 +58,27 @@ def main():
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
-    
+    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
     tree.lookahead = consts.lookahead
-    
-    tree.print()
-    # ax = tree.plot()
-    # RRT.plot_pose(ax, start_pose, color="green")
-    # RRT.plot_pose(ax, final_pose, color="red")
-    # plt.pause(0.1)
+    tree.print()    
     
     # Run the simulation
     CarController.mujoco_sim(env, start_pose, tree, consts) 
-    
-    plt.show()
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
+    """
+    number = create_unique_number(final_pose)
+    filename = "../trees/" + str(number) + ".pickle"
+    try:
+        with open(filename, "rb") as infile:
+            tree : RRT.Tree = pickle.load(infile)
+    except FileNotFoundError:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
+        with open(filename, "wb") as outfile:
+            # "wb" argument opens the file in binary mode
+            pickle.dump(tree, outfile)
+    
+    """
     if grow:
         tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
         with open("tree4.pickle", "wb") as outfile:
@@ -89,7 +90,7 @@ def test_rrt_reverse(obstacles, final_pose, grow=False):
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
-       
+   
     
 if __name__ == '__main__':
     main()

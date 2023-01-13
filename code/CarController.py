@@ -1,4 +1,3 @@
-import time
 import numpy as np
 import sys
 
@@ -57,10 +56,7 @@ def mujoco_sim(env, start_pose, tree, consts):
 
     original_points = points.copy()
 
-    workspace_center = np.array([0, 0]) # Coordinate center of workspace
-    workspace_size = np.array([30, 30]) # Dimensions of workspace
     env_map = RRT.Map(obstacles, consts=consts)
-    starttime = time.time()
     i = 0
     n = 0
     states = np.expand_dims(state.copy(), axis=0)
@@ -110,14 +106,10 @@ def mujoco_sim(env, start_pose, tree, consts):
         env.render() 
         states = np.vstack((states, state))
 
-        
-        ########################## resets when reaching endgoal ##########################
-
         if np.linalg.norm(state[:2] - points[-1, :2]) < 0.5 and np.linalg.norm(env.get_car_velocity()) < 0.1:
             env.close_window()
             break
-
-        
+    
         if n % 2 == 0:
             i = i + 1
             i = bound(0, points.shape[0]-1, i)
@@ -137,7 +129,6 @@ def mujoco_sim(env, start_pose, tree, consts):
 
         n = n+1
         
-        #time.sleep(0.01 - ((time.time() - starttime) % 0.01)) # sleep for 100 Hz realtime loop
     fig, ax = plt.subplots()
     env_map.plot(ax)
     ax.scatter(states[:,0], states[:,1], c=range(states.shape[0]), cmap='viridis')
