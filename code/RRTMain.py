@@ -47,14 +47,14 @@ class consts():
 def main():
     # Deifne the start and end points
     start_pose = RRT.pose_deg(3.0, -5.0, 0)
-    final_pose = RRT.pose_deg(0.5, 8.0, 90)
+    final_pose = RRT.pose_deg(0.0, 0.0, 180)
 
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
     
     start_pose_tree = tree.node_poses[0].copy()
     
@@ -155,13 +155,13 @@ def main():
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=10*60)
-        with open("tree16.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(50000), max_seconds=6*60)
+        with open("tree_easy.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree15.pickle", "rb") as infile:
+        with open("tree_easy.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
