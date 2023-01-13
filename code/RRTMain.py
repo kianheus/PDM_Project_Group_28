@@ -1,15 +1,23 @@
-# -----------------------------------------------------------------------------
+"""
+----------------------------------------------------------------------------------------
+This is the main script from which other parts of the code are run. 
+
+This file is structured as follows:
+1. Imports
+2. Definition of important constants
+3. Main function, which creates an environment, runs RRT code to create a path, 
+   simulates the found path in MuJoCo and outputs results.
+4. Function to develop RR tree backwards, from goal to start position
+5. Implementation of MuJoCo for this project
+-----------------------------------------------------------------------------------------
+"""
+
 # Import needed packages
-# -----------------------------------------------------------------------------
-
 import sys
-
 import time
 import numpy as np
-
 from tqdm import tqdm, trange
 from sys import exit
-
 import pickle
 
 from matplotlib import pyplot as plt
@@ -29,15 +37,15 @@ import CarController
 
 
 class consts():
-    turning_radius = 0.8
-    collision_resolution = 0.05
-    point_resolution = 0.05
-    vehicle_radius = 0.3
-    lookahead_m = 3.0
-    lookahead : int = int(lookahead_m // point_resolution)
-    workspace_center = np.array([0, 0])
-    workspace_size = np.array([30, 30])
-    recompute_error_treshold = 2.0
+    turning_radius = 0.8 #[m]
+    collision_resolution = 0.05 #[m]
+    point_resolution = 0.05 #[m]
+    vehicle_radius = 0.3 #[m]
+    lookahead_m = 3.0 #[m]
+    lookahead : int = int(lookahead_m // point_resolution) #[-]
+    workspace_center = np.array([0, 0]) #[m,m]
+    workspace_size = np.array([30, 30]) #[m,m]
+    recompute_error_treshold = 2.0 #[m]
     render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
 
 # -----------------------------------------------------------------------------
@@ -45,8 +53,8 @@ class consts():
 # -----------------------------------------------------------------------------
 
 def main():
-    # Deifne the start and end points
-    start_pose = RRT.pose_deg(5.0, -8.0, -170)
+    # Define the start and end points and angles
+    start_pose = RRT.pose_deg(4.0, -7.0, 90)
     final_pose = RRT.pose_deg(-1.5, 9.25, 0)
 
     # Create environment and extract relevant information
@@ -72,7 +80,7 @@ def main():
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
         tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
-        with open("tree3.pickle", "wb") as outfile:
+        with open("tree4.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:

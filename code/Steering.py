@@ -1,3 +1,9 @@
+"""
+-------------------------------------------------------------------
+For an example of how this code should be used, see SampleSteering.py
+-------------------------------------------------------------------
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -15,12 +21,13 @@ def rot(theta) -> np.ndarray:
 def pose_deg(x, y, t):
     return np.array([x, y, np.deg2rad(t)])
 
+# Flip the angle of a pose
 def reverse_pose(pose):
     pose[2] += np.pi
     pose[2] %= (2*np.pi)
     return pose
 
-
+# 
 def transform(start_pose, end_pose):
     # start_position = start_pose.copy()
     # start_position[2] = 1
@@ -172,7 +179,7 @@ class Arc(Segment):
                                     theta2=np.rad2deg(ang_e), fill=False, **kwargs))
 
 
-### Classes defining a path, which is just a collection of segments
+# Classes defining a path, which is a collection of segments
 
 class Path():
     def __init__(self, segments=None):
@@ -257,6 +264,7 @@ class Path():
             angles = np.flipud(angles)
         return np.hstack((mid, np.expand_dims(angles, axis=1)))
 
+# Path of type turn-straight-turn
 class PathTST(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end):
         self.start_pose = np.hstack((point_start, angle_start))
@@ -302,6 +310,7 @@ class PathTST(Path):
                     opt_len = opt.length
         return opt
 
+# Path of type turn-turn-turn 
 class PathTTT(Path):
     def __init__(self, point_start, angle_start, radius_start, point_end, angle_end, radius_end, radius_middle):
         self.start_pose = np.hstack((point_start, angle_start))
