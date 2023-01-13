@@ -36,6 +36,7 @@ git clone https://github.com/kianheus/PDM_Legends
 
 conda env create -f environment.yml
 ```
+ Please also ensure that the newly created python executable (for the conda environment) executes on a dedicated GPU (if available). If run on the CPU, the simulation is very slow.
 
 ## Executing program
 
