@@ -34,15 +34,18 @@ class consts():
     lookahead_m = 3.0 #[m]
     lookahead : int = int(lookahead_m // point_resolution) #[-]
     workspace_center = np.array([0, 0]) #[m,m]
-    workspace_size = np.array([30, 30]) #[m,m]
+    workspace_size = np.array([20, 20]) #[m,m]
     recompute_error_treshold = 2.0 #[m]
     render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
-    start_pose = RRT.pose_deg(4.0, -7.0, 90) #[m, m, deg]
-    final_pose = RRT.pose_deg(-1.5, -9.25, 0) #[m, m, deg]
+    start_pose = RRT.pose_deg(-7.5, 5, 0)#[m, m, deg]
+    final_pose = RRT.pose_deg(3.5, -5, 180) #[m, m, deg]
     
-# all grown trees
+# all grown trees end position
 # RRT.pose_deg(-1.5, -9.25, 0)
 # RRT.pose_deg(-1.5, 9.25, 0)
+# RRT.pose_deg(3.0, -5.0, 0) 
+# RRT.pose_deg(3.0, -5.0, 180)
+# RRT.pose_deg(4.0, -5.0, 180)
 
 # -----------------------------------------------------------------------------
 # Define main function
@@ -69,12 +72,12 @@ def load_grow_tree(obstacles, final_pose):
     number = create_unique_number(final_pose)
     
     # file name used for grown tree files
-    filename = "../trees/" + str(number) + ".pickle"
+    filename = "../trees/" + str(number) + ".pickle"#str(number) + ".pickle"
     try:
         with open(filename, "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
     except FileNotFoundError:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=6*60)
         with open(filename, "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)

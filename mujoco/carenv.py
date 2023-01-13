@@ -69,7 +69,6 @@ class Car(core.Env):
         if self.counter % 2000 == 0:
             self.bedspeed = self.bedspeed*-1
         self.data.ctrl[2] = self.bedspeed
-        self.data.ctrl[3] = -self.bedspeed
         
         # simulate 0.01 seconds of the simulation
         mujoco.mj_step(self.model, self.data)
@@ -103,7 +102,7 @@ class Car(core.Env):
         
     # set the desired location for the vehicle
     def set_position(self, loc):
-        self.data.qpos = [loc[0],loc[1],0,np.cos(loc[2]/2),0,0,np.sin(loc[2]/2),0,0,0,0,0,0,0,0,0] # x,y,z, queternion [0, 1, 2, 3], ???
+        self.data.qpos = [loc[0],loc[1],0,np.cos(loc[2]/2),0,0,np.sin(loc[2]/2),0,0,0,0,0,0,0,0] # x,y,z, queternion [0, 1, 2, 3], ???
    
     # returns the state of the vehicle via mujoco sensors. x,y,z postion and orientation around the z-axis
     def get_sensor_data(self):
@@ -153,10 +152,9 @@ class Car(core.Env):
     
     # moving obstacles. x,y postion, orientation around z-axis, "x,y" size
     def get_moving_obstacle(self): 
-        obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])])),
-                        np.hstack(([self.data.body('movingbed2').xpos[0:2], self.quat_to_degree(self.data.body('movingbed2').xquat), np.array([1,0.5])]))])
+        obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
         obs[:,3:] = obs[:,3:]*2.0   
-        obs[:,3] = obs[:,3]*1.25  
+        obs[:,3] = obs[:,3]*1.25 
         return obs
     
     # car obstacle velocity, in x, y direction
