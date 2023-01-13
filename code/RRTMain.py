@@ -17,14 +17,14 @@ import numpy as np
 from tqdm import trange
 import pickle
 import sys
+import struct
 
 sys.path.append("../mujoco")
 
 # Import from custom files
-import RRT
-import carenv
-import CarController
-import struct
+import RRT # everything related to the path
+import carenv # physics based environment and graphics
+import CarController # controlling the car based on path and apply it to the environment
 
 class consts():
     turning_radius = 0.8 #[m]
