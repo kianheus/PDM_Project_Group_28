@@ -47,20 +47,22 @@ class consts():
 def main():
     # Deifne the start and end points
     start_pose = RRT.pose_deg(3.0, -5.0, 0)
-    final_pose = RRT.pose_deg(0.0, 0.0, 180)
+    final_pose = RRT.pose_deg(0.5, 9.0, -180)
 
     # Create environment and extract relevant information
     env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
     # grow/load the tree
-    tree = test_rrt_reverse(obstacles, grow=True, final_pose=final_pose)
+    tree = test_rrt_reverse(obstacles, grow=False, final_pose=final_pose)
     
     start_pose_tree = tree.node_poses[0].copy()
     
     # tree.lookahead = consts.lookahead
     
     tree.print()
+    tree.plot()
+    plt.show()
     
     plt.rcParams.update({'figure.autolayout': True})
     plt.rcParams.update({
@@ -83,13 +85,13 @@ def main():
     print(f"{sum(tree.attempted_node_count_per_second)=}")
     plt.bar(times, [i/5 for i in tree.attempted_node_count_per_second], width=5.0, label="Rejected nodes", color="darkorange")
     plt.bar(times, [i/5 for i in tree.node_count_per_second], width=5.0, label="Nodes added", color="dodgerblue")
-    plt.xlim((0, 175))
+    plt.xlim((0, 100))
     plt.xlabel("Time (s)")
     plt.ylabel("Rate of nodes being added\n(nodes per second)")
     # plt.title("Rate of node addition as tree grows")
-    plt.text(max(times)*(3/5), max(tree.attempted_node_count_per_second) * (3.5/5)/5, f"Start pose = ({start_pose_tree[0]:.1f}m ,{start_pose_tree[1]:.1f}m ,{np.rad2deg(start_pose_tree[2]):.0f}°)", ha="center")
+    plt.text(100*(1/2), max(tree.attempted_node_count_per_second) * (3.5/5)/5, f"Start pose =\n({start_pose_tree[0]:.1f}m ,{start_pose_tree[1]:.1f}m ,{np.rad2deg(start_pose_tree[2]):.0f}°)", ha="center")
     plt.legend()
-    plt.savefig("bar.pdf", bbox_inches='tight')
+    plt.savefig("tree_growth_hard.pdf", bbox_inches='tight')
     # plt.rcParams.update({'font.size': 50})
     # plt.rc('font', size=12)          # controls default text sizes
     # plt.rc('axes', titlesize=12)     # fontsize of the axes title
@@ -155,13 +157,13 @@ def main():
 
 def test_rrt_reverse(obstacles, final_pose, grow=False):
     if grow:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(50000), max_seconds=6*60)
-        with open("tree_easy.pickle", "wb") as outfile:
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(50000), max_seconds=100)
+        with open("tree_hard.pickle", "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree_easy.pickle", "rb") as infile:
+        with open("tree_hard.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
