@@ -10,6 +10,4 @@ Kian Heus (4876768)
 Robot morphology: Car\
 Motion planner: RRT
 
-![](tree3_fast.gif)
-
-<video src='code/tree3_fast.mov' width=180/>
+<img src="tree3_fast.gif" width="550" height="550"/>
