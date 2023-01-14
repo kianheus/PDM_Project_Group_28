@@ -53,13 +53,14 @@ def main():
     env = carenv.Car(render=False)
     initial_pose, obstacles, moving_obstacles = env.reset(start_pose[0], start_pose[1], start_pose[2]) # start with reset
 
-    test(obstacles)
+    plot(obstacles)
     
     
 def test(obstacles):
     env_map = RRT.Map(obstacles, consts=consts)
 
     # Initialise a RR tree
+    plt.figure(1)
     
     tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
     ax = tree.plot()
@@ -68,23 +69,115 @@ def test(obstacles):
     plt.pause(0.1)
     
     lengths = []
+    times = []
     nodes = []
     colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
     
+    paths = []
+    
     # Grow the tree
-    for i in trange(10):
+    for i in trange(20):
+        
         tree = RRT.Tree(env_map, initial_pose=start_pose, consts=consts)
         tree.final_pose_rev = start_pose
-        tree.grow_to(final_pose, trange(5000), 2*60, finish=True, star=True)
+        time_s = time.time()
+        tree.grow_to(final_pose, trange(10000), 2*60, finish=True, star=False)
+        time_e = time.time()
+        times.append(time_e - time_s)
         path = tree.path_to(final_pose)
         lengths.append(path.length)
         nodes.append(len(tree.nodes))
         
-        path.plot(ax, color=next(colors), linewidth=1)
+        path.plot(ax, color="red", linewidth=1)
+        paths.append(path)
         plt.pause(0.1)
         
     print(lengths)
     print(nodes)
+    
+    lengths = np.array(lengths)
+    d = {"lengths": lengths, "paths": paths, "times": times}
+    with open("rrt_plain.pickle", "wb") as outfile:
+        pickle.dump(d, outfile)
+    
+    plt.figure(2)
+    plt.boxplot(lengths)
+    plt.show()
+
+
+def plot(obstacles):
+    env_map = RRT.Map(obstacles, consts=consts)
+    with open("rrt_plain.pickle", "rb") as infile:
+        d = pickle.load(infile)
+    paths_rrt = d["paths"]
+    lengths_rrt = d["lengths"]
+    times_rrt = d["times"]
+    with open("rrt_star.pickle", "rb") as infile:
+        d = pickle.load(infile)
+    paths_star = d["paths"]
+    lengths_star = d["lengths"]
+    
+    fig = plt.figure(1)
+    ax = fig.gca()
+    env_map.plot(ax)
+    # plt.axes("equal")
+    RRT.plot_pose(ax, start_pose, color='green')
+    RRT.plot_pose(ax, final_pose, color='red')
+    for path in paths_rrt:
+        path.plot(ax, color="dodgerblue", linewidth=1)
+        path.print()
+    for path in paths_star:
+        path.plot(ax, color="darkorange", linewidth=1)
+        path.print()
+    ax.axis("equal")
+    # plt.show()
+    
+    fig = plt.figure(2, figsize=(3.5,3))
+    bp = plt.boxplot([lengths_rrt, lengths_star], widths=0.4, patch_artist=True)
+    print(bp)
+    edge_color, fill_color = "dodgerblue", "white"
+    for element in ['whiskers', 'caps']:
+        plt.setp(bp[element][:2], color=edge_color, linewidth=1.5)
+    for element in ['boxes', 'fliers', 'means', 'medians']:
+        plt.setp(bp[element][:1], color=edge_color, linewidth=1.5)
+        
+    edge_color, fill_color = "darkorange", "white"
+    for element in ['whiskers', 'caps']:
+        plt.setp(bp[element][2:], color=edge_color, linewidth=1.5)
+    for element in ['boxes','fliers', 'means', 'medians']:
+        plt.setp(bp[element][1:], color=edge_color, linewidth=1.5)
+        
+        
+    for patch in bp['boxes']:
+        patch.set(facecolor=fill_color)    
+    plt.xticks(ticks=[1, 2], labels=["RRT","RRT*"])
+    # plt.plot([0.5, 1.5], [22.8, 22.8])
+    plt.ylim((23, 33))
+    plt.ylabel("Distance [m]")
+    # plt.boxplot(lengths_star)
+    fig.savefig("boxplot.pdf")
+    plt.show()
+        
+
+
+def plot_s(obstacles):
+    env_map = RRT.Map(obstacles, consts=consts)
+    with open("rrt_star.pickle", "rb") as infile:
+        d = pickle.load(infile)
+    paths_star = d["paths"]
+    lengths_star = d["lengths"]
+    fig = plt.figure(1)
+    ax = fig.gca()
+    env_map.plot(ax)
+    # plt.axes("equal")
+    RRT.plot_pose(ax, start_pose, color='green')
+    RRT.plot_pose(ax, final_pose, color='red')
+    path :steer.Path = paths_star[1]
+    path.plot(ax, color="darkorange", linewidth=1)
+    dp = path.interpolate(d=0.1)
+    plt.scatter(dp[:,0],dp[:,1])
+    path.print()
+    ax.axis("equal")
     plt.show()
 
 
