@@ -9,6 +9,7 @@ Kian Heus (4876768)
 
 ## Description
 
+<img src="graphics/growing_tree.gif" width="400" height="400" />
 
 ## Dependencies
 
