@@ -155,7 +155,7 @@ def plot(obstacles):
     plt.ylim((23, 33))
     plt.ylabel("Distance [m]")
     # plt.boxplot(lengths_star)
-    fig.savefig("boxplot.pdf")
+    fig.savefig("boxplot.pdf", bbox_inches='tight')
     plt.show()
         
 
