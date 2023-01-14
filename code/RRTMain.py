@@ -117,19 +117,38 @@ def plot(obstacles):
     paths_star = d["paths"]
     lengths_star = d["lengths"]
     
-    fig = plt.figure(1)
+    fig = plt.figure(1, figsize=(4,4))
+    plt.rcParams.update({'figure.autolayout': True})
+    plt.rcParams.update({
+        "font.family": "serif",
+        # "font.family": "Helvetica"
+    })
     ax = fig.gca()
     env_map.plot(ax)
     # plt.axes("equal")
-    RRT.plot_pose(ax, start_pose, color='green')
-    RRT.plot_pose(ax, final_pose, color='red')
-    for path in paths_rrt:
-        path.plot(ax, color="dodgerblue", linewidth=1)
+    
+    for path in paths_rrt[12:17]:
+        path.plot(ax, color="dodgerblue", linewidth=1, alpha=0.8)
         path.print()
-    for path in paths_star:
-        path.plot(ax, color="darkorange", linewidth=1)
+    plt.plot([0, 1], [20, 20], color="dodgerblue", label="RRT")
+    for path in paths_star[17:20]:
+        path.plot(ax, color="darkorange", linewidth=1, alpha=0.8)
         path.print()
+    for path in paths_star[12:14]:
+        path.plot(ax, color="darkorange", linewidth=1, alpha=0.8)
+        path.print()
+    plt.plot([0, 1], [20, 20], color="darkorange", label="RRT*")
     ax.axis("equal")
+    RRT.plot_pose(ax, start_pose, color='green', label="Start")
+    RRT.plot_pose(ax, final_pose, color='red', label="End")
+    plt.xlabel("X Position [m]")
+    plt.ylabel("Y Position [m]")
+    ax.set_xlim((-10.5, 10.5))
+    ax.set_ylim((-10.5, 10.5))
+    plt.xticks([-10, -5, 0,5,10])
+    plt.yticks([-10, -5, 0,5,10])
+    plt.legend()
+    fig.savefig("map.pdf", bbox_inches='tight')
     # plt.show()
     
     fig = plt.figure(2, figsize=(3.5,3))
@@ -152,7 +171,7 @@ def plot(obstacles):
         patch.set(facecolor=fill_color)    
     plt.xticks(ticks=[1, 2], labels=["RRT","RRT*"])
     # plt.plot([0.5, 1.5], [22.8, 22.8])
-    plt.ylim((23, 33))
+    plt.ylim((23, 37))
     plt.ylabel("Distance [m]")
     # plt.boxplot(lengths_star)
     fig.savefig("boxplot.pdf", bbox_inches='tight')
