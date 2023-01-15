@@ -56,7 +56,7 @@
         <geom class="buddy_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 1"/>
       </body>
     </body>
-  <camera name="spiderman" mode="fixed" pos="0 0 20" euler="0 0 3.1415" fovy = '60'/>
+  <camera name="spiderman" mode="fixed" pos="1 0 20" euler="0 0 6.2830" fovy = '60'/>
   </worldbody>
   <actuator>
     <position class="buddy_steering" kp="25.0" name="buddy_steering_pos" joint="buddy_steering_wheel"/>

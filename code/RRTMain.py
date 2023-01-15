@@ -37,15 +37,11 @@ class consts():
     workspace_size = np.array([20, 20]) #[m,m]
     recompute_error_treshold = 2.0 #[m]
     render_mode = 1 # 0 = render off, 1 = render on 2 = offscreen render (for video)
-    start_pose = RRT.pose_deg(-7.5, 5, 0)#[m, m, deg]
-    final_pose = RRT.pose_deg(3.5, -5, 180) #[m, m, deg]
+    start_pose = RRT.pose_deg(-6.0, 9, 0)#[m, m, deg]
+    final_pose = RRT.pose_deg(2.5, -5, 180) #[m, m, deg]
     
 # all grown trees end position
-# RRT.pose_deg(-1.5, -9.25, 0)
-# RRT.pose_deg(-1.5, 9.25, 0)
-# RRT.pose_deg(3.0, -5.0, 0) 
-# RRT.pose_deg(3.0, -5.0, 180)
-# RRT.pose_deg(4.0, -5.0, 180)
+# RRT.pose_deg(3.5, -5, 180)
 
 # -----------------------------------------------------------------------------
 # Define main function

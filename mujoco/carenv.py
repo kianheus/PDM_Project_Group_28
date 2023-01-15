@@ -92,13 +92,9 @@ class Car(core.Env):
             
         # offscreen render
         elif self.mode ==2:
-            img = self.viewer.read_pixels(camid=1)
+            img = self.viewer.read_pixels(camid=0)
             im = Image.fromarray(img)
             im.save("../videoframes/frame_{}.jpeg".format(self.counter))
-        
-    # render a frame
-    def off_screen_render(self, mode):
-        self.viewer.render()
         
     # set the desired location for the vehicle
     def set_position(self, loc):
@@ -154,7 +150,7 @@ class Car(core.Env):
     def get_moving_obstacle(self): 
         obs = np.array([np.hstack(([self.data.body('movingbed1').xpos[0:2], self.quat_to_degree(self.data.body('movingbed1').xquat), np.array([1,0.5])]))])
         obs[:,3:] = obs[:,3:]*2.0   
-        obs[:,3] = obs[:,3]*1.25 
+        obs[:,3] = obs[:,3]*1.25
         return obs
     
     # car obstacle velocity, in x, y direction

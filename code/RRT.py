@@ -481,7 +481,7 @@ class Tree():
         self.map.set_obstacles(obstacles)
 
         # Grow the tree to the final pose
-        done, _ = self.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=20)
+        done, _ = self.add_path_to(state_rev, modify_angle=False, n_closest=100, i_break=40)
         # done = tree.grow_to(state_rev, trange(200), 1.0, star=False)
         
         # fig, ax = plt.subplots()
