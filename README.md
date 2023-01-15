@@ -49,13 +49,20 @@ To run the main program run the following:
 cd code
 python RRTMain.py
 ```
+*Warning: the program can be slow when running the simulation from the integrated graphics card. Be sure to run the program on the dedicated card.*  
 
-Warning: the program can be slow when running the simulation from the integrated graphics card. Be sure to run the program on the dedicated card.  
+Instruction to interact with environment:
+* In first camera view, the mouse can be used to look around the environment.
+* Double click car. Hold '**ctrl**' while pressing '**left -**' or '**right mouse button**' to disturb the car. See visualisation below.
+* Press '**tab**' to change camera
+* Press '**space**' to pause the simulation
+* Press '**h**' to open help menu for more options
 
 ## External packages/files used
 * Gym: https://www.gymlibrary.dev/
 * Physics engine: https://mujoco.org/
 * MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
     * This package is modified. Only MuSHR RC car is extracted from it and it is put in a custom made hospital environment. Also some small things are added to the car like sensors, colors and camera's.
+* Interactive renderer that works and interacts with MuJoCo: https://github.com/rohanpsingh/mujoco-python-viewer
 * STL file of hosptial bed: https://grabcad.com/library/hospital-service-room-bed-2-new-version-1 
 
