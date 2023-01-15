@@ -51,3 +51,8 @@ To run the main program run the following:
 cd code
 python RRTMain.py
 ```
+
+## Modified packages
+
+The following package is used to get a MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
+This package is modified to get the MuSHR RC car in a custom made hospital environment. 
