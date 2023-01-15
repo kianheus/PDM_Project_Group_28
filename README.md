@@ -8,6 +8,10 @@ Thomas Hettasch (5836905)\
 Kian Heus (4876768)
 
 ## Description
+This repository contains the source files for the project of team 28.
+* Robot morphology: Non holonomic four wheeled vehicle.
+* Motion planner: Reverse RRT* as global planner. Pre-grown RRT as local planner.
+* Environment: Hospital world with four rooms, static beds and a moving bed. Full physics based enivornment using MuJoCo physics.
 
 <p float="left">
 <img src="graphics/growing_tree.gif" width="35%" />
@@ -42,6 +46,7 @@ Then install the dependencies as outlined above.
 *Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime.*  
 
 ## Executing program
+#### Running the program
 If using a conda environment, run ```conda activate group28rrt``` first.
 
 To run the main program run the following:
@@ -49,8 +54,7 @@ To run the main program run the following:
 cd code
 python RRTMain.py
 ```
-
-
+#### Interacting with the program
 Instruction to interact with environment:
 * In first camera view, the mouse can be used to look around the environment.
 * Double click car. Hold '**ctrl**' while pressing '**left -**' or '**right mouse button**' to disturb the car. See visualisation below.
@@ -61,6 +65,13 @@ Instruction to interact with environment:
 <p float="left">
 <img src="graphics/car_disturbed.gif" width="60%" />
 </p>
+
+#### Changing the program
+In ```RRTMain.py``` some parameters including the start and end position can be changed. To change start and goal location, go to the '**class consts**' section and change '**start_pose**' and/or '**end_pose**'. 
+
+*Note 1: if start position is changed, the tree does not have to be regrown. If the end position is changed, it will look into the files to check if that specific tree is already grown. If that tree is not grown, it will grow a tree of a limited size or when the time limit of 5 minutes is reached.*
+
+*Note 2: if other parameters are changed that influence the tree, all the three always need to be (re)grown. In otherwords the pickle files in the folder trees need to be removed.*
 
 ## External packages/files used
 * Gym: https://www.gymlibrary.dev/
