@@ -7,6 +7,11 @@ Paula Gasco Claramunt (5725453)\
 Thomas Hettasch (5836905)\
 Kian Heus (4876768)
 
+# TO INCLUDE:
+* Video of MuJoCo simulation avoiding moving bed and reaching the goal
+* Video of MuJoCo simulation with a disturbance
+* Video of tree growing
+
 ## Description
 
 <img src="graphics/growing_tree.gif" width="400" height="400" />
