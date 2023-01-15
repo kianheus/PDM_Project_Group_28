@@ -73,7 +73,7 @@ def load_grow_tree(obstacles, final_pose):
         with open(filename, "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
     except FileNotFoundError:
-        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=6*60)
+        tree = RRT.Tree.grow_reverse_tree(obstacles, consts, final_pose=final_pose, itera=trange(10000), max_seconds=5*60)
         with open(filename, "wb") as outfile:
             # "wb" argument opens the file in binary mode
             pickle.dump(tree, outfile)
