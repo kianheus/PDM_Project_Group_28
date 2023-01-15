@@ -52,6 +52,8 @@ cd code
 python RRTMain.py
 ```
 
+Warning: the program can be slow when running the simulation from the integrated graphics card. Be sure to run the program on the dedicated card.  
+
 ## Modified packages
 
 The following package is used to get a MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
