@@ -7,11 +7,6 @@ Paula Gasco Claramunt (5725453)\
 Thomas Hettasch (5836905)\
 Kian Heus (4876768)
 
-# TO INCLUDE:
-* Video of MuJoCo simulation avoiding moving bed and reaching the goal
-* Video of MuJoCo simulation with a disturbance
-* Video of tree growing
-
 ## Description
 
 <p float="left">
@@ -57,9 +52,10 @@ python RRTMain.py
 
 Warning: the program can be slow when running the simulation from the integrated graphics card. Be sure to run the program on the dedicated card.  
 
-## Modified packages
+## External packages/files used
+* Gym: https://www.gymlibrary.dev/
+* Physics engine: https://mujoco.org/
+* MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
+    * This package is modified. Only MuSHR RC car is extracted from it and it is put in a custom made hospital environment. Also some small things are added to the car like sensors, colors and camera's.
+* STL file of hosptial bed: https://grabcad.com/library/hospital-service-room-bed-2-new-version-1 
 
-The following package is used to get a MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
-This package is modified to get the MuSHR RC car in a custom made hospital environment. 
-
-https://grabcad.com/library/hospital-service-room-bed-2-new-version-1 
