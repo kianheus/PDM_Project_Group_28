@@ -39,7 +39,7 @@ git clone git@github.com:kianheus/PDM_Project_Group_28.git
 ```
 Then install the dependencies as outlined above.
 
- Please also ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU, the simulation will not run realtime.
+*Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime.*  
 
 ## Executing program
 If using a conda environment, run ```conda activate group28rrt``` first.
@@ -49,7 +49,7 @@ To run the main program run the following:
 cd code
 python RRTMain.py
 ```
-*Warning: the program can be slow when running the simulation from the integrated graphics card. Be sure to run the program on the dedicated card.*  
+
 
 Instruction to interact with environment:
 * In first camera view, the mouse can be used to look around the environment.
