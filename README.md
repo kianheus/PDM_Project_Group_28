@@ -58,3 +58,5 @@ Warning: the program can be slow when running the simulation from the integrated
 
 The following package is used to get a MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
 This package is modified to get the MuSHR RC car in a custom made hospital environment. 
+
+https://grabcad.com/library/hospital-service-room-bed-2-new-version-1 
