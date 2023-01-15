@@ -10,8 +10,8 @@ Kian Heus (4876768)
 ## Description
 
 <p float="left">
-<img src="graphics/growing_tree.gif" width="400" height="400" />
-<img src="graphics/car_driving.gif" width="600" height="400" />
+<img src="graphics/growing_tree.gif" width="35%" />
+<img src="graphics/car_driving.gif" width="60%" />
 </p>
  
 ## Dependencies
@@ -57,6 +57,10 @@ Instruction to interact with environment:
 * Press '**tab**' to change camera
 * Press '**space**' to pause the simulation
 * Press '**h**' to open help menu for more options
+
+<p float="left">
+<img src="graphics/car_disturbed.gif" width="60%" />
+</p>
 
 ## External packages/files used
 * Gym: https://www.gymlibrary.dev/
