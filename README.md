@@ -15,6 +15,7 @@ Kian Heus (4876768)
 ## Description
 
 <img src="graphics/growing_tree.gif" width="400" height="400" />
+<img src="graphics/car_driving.gif" width="400" height="400" />
 
 ## Dependencies
 This repository requires the following python modules to work correctly:
