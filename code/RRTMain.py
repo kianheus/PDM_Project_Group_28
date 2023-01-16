@@ -139,8 +139,8 @@ def plot(obstacles):
         path.print()
     plt.plot([0, 1], [20, 20], color="darkorange", label="RRT*")
     ax.axis("equal")
-    RRT.plot_pose(ax, start_pose, color='green', label="Start")
-    RRT.plot_pose(ax, final_pose, color='red', label="End")
+    RRT.plot_pose(ax, final_pose, color='green', label="Start")
+    RRT.plot_pose(ax, start_pose, color='red', label="End")
     plt.xlabel("X Position [m]")
     plt.ylabel("Y Position [m]")
     ax.set_xlim((-10.5, 10.5))
@@ -149,6 +149,7 @@ def plot(obstacles):
     plt.yticks([-10, -5, 0,5,10])
     plt.legend()
     fig.savefig("map.pdf", bbox_inches='tight')
+    fig.savefig("map.png", bbox_inches='tight', dpi=500)
     # plt.show()
     
     fig = plt.figure(2, figsize=(3.5,3))
