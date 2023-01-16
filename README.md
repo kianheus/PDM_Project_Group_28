@@ -39,7 +39,7 @@ conda env create -f environment.yml```. If conda is used, run ```conda activate 
 
 ## Installation
 
-To install the program with the conda environment, first clone this repository in desired location:
+To install the program with the conda environment, first clone this repository in desired location with the git command or download the zip and put in the prefered folder:
 ```
 git clone https://github.com/kianheus/PDM_Project_Group_28.git
 ```
