@@ -49,7 +49,7 @@ cd PDM_Project_Group_28/
 conda env create -f environment.yml
 ```
 
-*Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime.*  
+*Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime. For windows users using NVIDIA GPU, this can be done with the NVIDIA control panel*  
 
 ## Executing program
 #### Running the program
