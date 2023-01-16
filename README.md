@@ -49,7 +49,9 @@ cd PDM_Project_Group_28/
 conda env create -f environment.yml
 ```
 
-*Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime. For windows users using NVIDIA GPU, this can be done with the NVIDIA control panel*  
+*Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime.* 
+
+*For windows users using NVIDIA GPU, this can be done with the NVIDIA control panel -> Manage 3D settings -> Select tab program settings -> At heading 1 press add and select Python -> At heading 2 select high performance NVIDIA processor*  
 
 ## Executing program
 #### Running the program
@@ -77,12 +79,12 @@ In ```RRTMain.py``` some parameters including the start and end position can be 
 
 *Note 1: if start position is changed, the tree does not have to be regrown. If the end position is changed, it will look into the files to check if that specific tree is already grown. If that tree is not grown, it will grow a tree of a limited size or when the time limit of 5 minutes is reached.*
 
-*Note 2: if other parameters are changed that influence the tree, all the three always need to be (re)grown. In otherwords the pickle files in the folder trees need to be removed.*
+*Note 2: if other parameters are changed that influence the tree, all the trees always need to be (re)grown. In otherwords the pickle files in the folder trees need to be removed.*
 
 ## External packages/files used
 * Gym: https://www.gymlibrary.dev/
 * Physics engine: https://mujoco.org/
-* MJCF file of a RC car: https://github.com/prl-mushr/mushr_mujoco_ros
+* MJCF file of an RC car: https://github.com/prl-mushr/mushr_mujoco_ros
     * This package is modified. Only MuSHR RC car is extracted from it and it is put in a custom made hospital environment. Also some small things are added to the car like sensors, colors and camera's.
 * Interactive renderer that works and interacts with MuJoCo: https://github.com/rohanpsingh/mujoco-python-viewer
 * STL file of hosptial bed: https://grabcad.com/library/hospital-service-room-bed-2-new-version-1 
