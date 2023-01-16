@@ -84,14 +84,14 @@ def main():
     print(f"{sum(tree.node_count_per_second)=}")
     print(f"{sum(tree.attempted_node_count_per_second)=}")
     plt.bar(times, [i/5 for i in tree.attempted_node_count_per_second], width=5.0, label="Rejected nodes", color="darkorange")
-    plt.bar(times, [i/5 for i in tree.node_count_per_second], width=5.0, label="Nodes added", color="dodgerblue")
+    plt.bar(times, [i/5 for i in tree.node_count_per_second], width=5.0, label="Added nodes", color="dodgerblue")
     plt.xlim((0, 100))
     plt.xlabel("Time [s]")
     plt.ylabel("Rate of nodes being sampled\n[nodes per second]")
     # plt.title("Rate of node addition as tree grows")
     plt.text(100*(1/2), max(tree.attempted_node_count_per_second) * (3.5/5)/5, f"Start pose =\n({start_pose_tree[0]:.1f}m ,{start_pose_tree[1]:.1f}m ,{np.rad2deg(start_pose_tree[2]):.0f}°)", ha="center")
     plt.legend()
-    plt.savefig("tree_growth_easy.pdf", bbox_inches='tight')
+    plt.savefig("tree_growth_hard.pdf", bbox_inches='tight')
     # plt.rcParams.update({'font.size': 50})
     # plt.rc('font', size=12)          # controls default text sizes
     # plt.rc('axes', titlesize=12)     # fontsize of the axes title
@@ -163,7 +163,7 @@ def test_rrt_reverse(obstacles, final_pose, grow=False):
             pickle.dump(tree, outfile)
     else:
         print("loading...")
-        with open("tree_easy.pickle", "rb") as infile:
+        with open("tree_hard.pickle", "rb") as infile:
             tree : RRT.Tree = pickle.load(infile)
         print("loaded.")
     return tree
