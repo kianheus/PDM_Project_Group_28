@@ -39,11 +39,12 @@ conda env create -f environment.yml```. If conda is used, run ```conda activate 
 
 ## Installation
 
-To install the program, first clone this repository:
+To install the program with the conda environment, first clone this repository. This whole instruction assume that you are in your home directory:
 ```
 git clone https://github.com/kianheus/PDM_Project_Group_28.git
+cd ~/PDM_Project_Group_28/
+conda env create -f environment.yml
 ```
-Then install the dependencies as outlined above.
 
 *Warning: Please ensure that the relevant python executable runs on a dedicated GPU (if available). If run on the CPU or with integrated GPU, the simulation will not run realtime.*  
 
@@ -53,7 +54,7 @@ If using a conda environment, run ```conda activate group28rrt``` first.
 
 To run the main program run the following:
 ```
-cd code
+cd ~/PDM_Project_Group_28/code
 python RRTMain.py
 ```
 #### Interacting with the program
