@@ -39,10 +39,10 @@ conda env create -f environment.yml```. If conda is used, run ```conda activate 
 
 ## Installation
 
-To install the program with the conda environment, first clone this repository. This whole instruction assume that you are in your home directory:
+To install the program with the conda environment, first clone this repository in desired location:
 ```
 git clone https://github.com/kianheus/PDM_Project_Group_28.git
-cd ~/PDM_Project_Group_28/
+cd PDM_Project_Group_28/
 conda env create -f environment.yml
 ```
 
@@ -52,9 +52,9 @@ conda env create -f environment.yml
 #### Running the program
 If using a conda environment, run ```conda activate group28rrt``` first.
 
-To run the main program run the following:
+To run the main program run the following lines from the ```PDM_Project_Group_28 folder```:
 ```
-cd ~/PDM_Project_Group_28/code
+cd code
 python RRTMain.py
 ```
 #### Interacting with the program
