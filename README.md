@@ -12,6 +12,8 @@ This repository contains the source files for the project of team 28.
 * Robot morphology: Non holonomic four wheeled vehicle.
 * Motion planner: Reverse RRT* as global planner. Pre-grown RRT as local planner.
 * Environment: Hospital world with four rooms, static beds and a moving bed. Full physics based enivornment using MuJoCo physics.
+* Video of vehicle driving: https://youtu.be/t0rsL7pqINs
+* Video of vehicle being disturbed: https://youtu.be/Lc2vbbH4lp4
 
 <p float="left">
 <img src="graphics/growing_tree.gif" width="35%" />
